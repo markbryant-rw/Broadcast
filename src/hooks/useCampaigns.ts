@@ -87,6 +87,55 @@ export function useCampaigns() {
     },
   });
 
+  const scheduleCampaign = useMutation({
+    mutationFn: async ({ id, scheduledAt, timezone }: { id: string; scheduledAt: string; timezone: string }) => {
+      const { data, error } = await supabase
+        .from('campaigns')
+        .update({ 
+          scheduled_at: scheduledAt, 
+          status: 'scheduled',
+          content: supabase.rpc ? undefined : undefined, // We'll store timezone in a separate approach
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['campaigns'] });
+      toast.success('Campaign scheduled');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to schedule campaign');
+    },
+  });
+
+  const cancelSchedule = useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase
+        .from('campaigns')
+        .update({ 
+          scheduled_at: null, 
+          status: 'draft',
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['campaigns'] });
+      toast.success('Schedule cancelled');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to cancel schedule');
+    },
+  });
+
   return {
     campaigns: campaignsQuery.data || [],
     isLoading: campaignsQuery.isLoading,
@@ -94,5 +143,7 @@ export function useCampaigns() {
     addCampaign,
     updateCampaign,
     deleteCampaign,
+    scheduleCampaign,
+    cancelSchedule,
   };
 }
