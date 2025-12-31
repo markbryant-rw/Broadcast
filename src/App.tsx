@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Contacts from "./pages/Contacts";
 import Campaigns from "./pages/Campaigns";
+import CampaignEditor from "./pages/CampaignEditor";
 import Analytics from "./pages/Analytics";
 import Integrations from "./pages/Integrations";
 import Settings from "./pages/Settings";
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/contacts" element={<ProtectedRoute><Contacts /></ProtectedRoute>} />
             <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
+            <Route path="/campaigns/:id/edit" element={<ProtectedRoute><CampaignEditor /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
             <Route path="/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />

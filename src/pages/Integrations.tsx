@@ -1,27 +1,57 @@
+import { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Link2, ExternalLink, CheckCircle2, XCircle } from 'lucide-react';
-
-const integrations = [
-  {
-    id: 'agentbuddy',
-    name: 'AgentBuddy',
-    description: 'Sync your customers and activity data for targeted email campaigns.',
-    connected: false,
-    logo: '🤖',
-  },
-  {
-    id: 'resend',
-    name: 'Resend',
-    description: 'Email delivery service for sending your campaigns.',
-    connected: false,
-    logo: '📧',
-  },
-];
+import { Link2, ExternalLink, CheckCircle2, XCircle, RefreshCw, Loader2 } from 'lucide-react';
+import { useAgentBuddy } from '@/hooks/useAgentBuddy';
+import { format } from 'date-fns';
 
 export default function Integrations() {
+  const { 
+    isConnected, 
+    connection, 
+    isLoading, 
+    connect, 
+    disconnect, 
+    sync 
+  } = useAgentBuddy();
+
+  const integrations = [
+    {
+      id: 'agentbuddy',
+      name: 'AgentBuddy',
+      description: 'Sync your customers and activity data for targeted email campaigns.',
+      logo: '🤖',
+      connected: isConnected,
+      connectedAt: connection?.connected_at,
+      scopes: connection?.scopes,
+    },
+    {
+      id: 'resend',
+      name: 'Resend',
+      description: 'Email delivery service for sending your campaigns.',
+      connected: false,
+      logo: '📧',
+    },
+  ];
+
+  const handleConnect = async (id: string) => {
+    if (id === 'agentbuddy') {
+      connect.mutate();
+    }
+  };
+
+  const handleDisconnect = async (id: string) => {
+    if (id === 'agentbuddy') {
+      disconnect.mutate();
+    }
+  };
+
+  const handleSync = () => {
+    sync.mutate();
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -67,17 +97,62 @@ export default function Integrations() {
               </CardHeader>
               <CardContent>
                 {integration.connected ? (
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
-                      Configure
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-destructive">
-                      Disconnect
-                    </Button>
+                  <div className="space-y-4">
+                    {integration.connectedAt && (
+                      <p className="text-sm text-muted-foreground">
+                        Connected {format(new Date(integration.connectedAt), 'MMM d, yyyy')}
+                      </p>
+                    )}
+                    {integration.scopes && integration.scopes.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {integration.scopes.map((scope) => (
+                          <Badge key={scope} variant="outline" className="text-xs">
+                            {scope}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      {integration.id === 'agentbuddy' && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={handleSync}
+                          disabled={sync.isPending}
+                        >
+                          {sync.isPending ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                          )}
+                          Sync Customers
+                        </Button>
+                      )}
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-destructive"
+                        onClick={() => handleDisconnect(integration.id)}
+                        disabled={disconnect.isPending}
+                      >
+                        {disconnect.isPending ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : null}
+                        Disconnect
+                      </Button>
+                    </div>
                   </div>
                 ) : (
-                  <Button className="gradient-primary">
-                    <Link2 className="h-4 w-4 mr-2" />
+                  <Button 
+                    className="gradient-primary"
+                    onClick={() => handleConnect(integration.id)}
+                    disabled={connect.isPending || isLoading}
+                  >
+                    {(connect.isPending || isLoading) ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Link2 className="h-4 w-4 mr-2" />
+                    )}
                     Connect
                   </Button>
                 )}
