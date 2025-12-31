@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { Tables } from '@/integrations/supabase/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,8 @@ const statusConfig: Record<Campaign['status'], { label: string; className: strin
 };
 
 export default function CampaignsList({ campaigns, onDelete }: CampaignsListProps) {
+  const navigate = useNavigate();
+  
   return (
     <div className="space-y-4">
       {campaigns.map((campaign) => {
@@ -57,7 +60,7 @@ export default function CampaignsList({ campaigns, onDelete }: CampaignsListProp
                 </div>
                 <div className="flex items-center gap-2">
                   {campaign.status === 'draft' && (
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="outline" onClick={() => navigate(`/campaigns/${campaign.id}/edit`)}>
                       <FileEdit className="h-4 w-4 mr-1" />
                       Edit
                     </Button>

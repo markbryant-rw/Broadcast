@@ -1,1 +1,7 @@
 project_id = "bessucubulzbrrujkcxg"
+
+[functions.agentbuddy-oauth]
+verify_jwt = false
+
+[functions.agentbuddy-sync]
+verify_jwt = false
