@@ -22,6 +22,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { OrganizationSwitcher } from '@/components/organizations/OrganizationSwitcher';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -58,6 +59,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <Radio className="h-5 w-5 text-primary-foreground" />
           </div>
           <span className="text-xl font-display font-bold text-sidebar-foreground">Broadcast</span>
+        </div>
+
+        {/* Organization Switcher */}
+        <div className="px-4 py-4 border-b border-sidebar-border">
+          <OrganizationSwitcher />
         </div>
 
         {/* Navigation */}

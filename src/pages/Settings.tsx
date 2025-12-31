@@ -8,11 +8,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { User, Mail, Shield, Bell, Loader2 } from 'lucide-react';
+import { useOrganizations } from '@/hooks/useOrganizations';
+import { DomainManager } from '@/components/organizations/DomainManager';
+import { OrganizationSettings } from '@/components/organizations/OrganizationSettings';
+import { User, Mail, Shield, Bell, Loader2, Building2 } from 'lucide-react';
 
 export default function Settings() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { currentOrganization } = useOrganizations();
   const [isSaving, setIsSaving] = useState(false);
 
   const userInitials = user?.user_metadata?.first_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U';
@@ -40,10 +44,14 @@ export default function Settings() {
         </div>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList>
+          <TabsList className="flex-wrap">
             <TabsTrigger value="profile" className="gap-2">
               <User className="h-4 w-4" />
               Profile
+            </TabsTrigger>
+            <TabsTrigger value="organization" className="gap-2">
+              <Building2 className="h-4 w-4" />
+              Organization
             </TabsTrigger>
             <TabsTrigger value="email" className="gap-2">
               <Mail className="h-4 w-4" />
@@ -116,6 +124,11 @@ export default function Settings() {
                 </Button>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="organization" className="mt-6 space-y-6">
+            <DomainManager organizationId={currentOrganization?.id} />
+            <OrganizationSettings organizationId={currentOrganization?.id} />
           </TabsContent>
 
           <TabsContent value="email" className="mt-6 space-y-6">
