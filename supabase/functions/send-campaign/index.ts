@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const DEFAULT_SENDER_DOMAIN = "resend.dev"; // Fallback domain
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,7 +29,13 @@ serve(async (req: Request): Promise<Response> => {
       throw new Error("Missing authorization header");
     }
 
-    // Initialize Supabase client with user's auth
+    // Initialize Supabase client with service role for full access
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    // Initialize Supabase client with user's auth for RLS
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
@@ -47,6 +54,42 @@ serve(async (req: Request): Promise<Response> => {
 
     if (campaignError || !campaign) {
       throw new Error(`Campaign not found: ${campaignError?.message}`);
+    }
+
+    // Get organization's verified domains if campaign has organization_id
+    let verifiedDomains: string[] = [];
+    if (campaign.organization_id) {
+      const { data: domains } = await supabaseAdmin
+        .from("verified_domains")
+        .select("domain")
+        .eq("organization_id", campaign.organization_id)
+        .not("verified_at", "is", null);
+      
+      verifiedDomains = (domains || []).map(d => d.domain);
+      console.log(`Verified domains for org: ${verifiedDomains.join(", ")}`);
+    }
+
+    // Determine sender email and reply-to using Reply-To pattern
+    const userFromEmail = campaign.from_email || "";
+    const userFromName = campaign.from_name || "Newsletter";
+    const userEmailDomain = userFromEmail.split("@")[1] || "";
+    
+    let senderEmail: string;
+    let replyToEmail: string;
+    
+    // Check if user's domain is verified
+    if (verifiedDomains.includes(userEmailDomain)) {
+      // User's domain is verified - send directly from their address
+      senderEmail = userFromEmail;
+      replyToEmail = campaign.reply_to || userFromEmail;
+      console.log(`Using verified domain: ${senderEmail}`);
+    } else {
+      // Use Reply-To pattern: send from app domain, reply-to goes to user
+      // Use the first verified domain or fallback to default
+      const senderDomain = verifiedDomains[0] || DEFAULT_SENDER_DOMAIN;
+      senderEmail = `noreply@${senderDomain}`;
+      replyToEmail = userFromEmail || campaign.reply_to || senderEmail;
+      console.log(`Using Reply-To pattern: from ${senderEmail}, reply-to ${replyToEmail}`);
     }
 
     // Get recipients based on selection type
@@ -113,7 +156,7 @@ serve(async (req: Request): Promise<Response> => {
       .eq("id", campaignId);
 
     // Create campaign analytics record
-    await supabase
+    await supabaseAdmin
       .from("campaign_analytics")
       .upsert({
         campaign_id: campaignId,
@@ -132,14 +175,12 @@ serve(async (req: Request): Promise<Response> => {
       contact_id: r.id,
     }));
     
-    await supabase
+    await supabaseAdmin
       .from("campaign_recipients")
       .upsert(recipientRecords, { onConflict: "campaign_id,contact_id", ignoreDuplicates: true });
 
     // Get email content
     const emailContent = (campaign.content as { html?: string })?.html || "";
-    const fromEmail = campaign.from_email || "onboarding@resend.dev";
-    const fromName = campaign.from_name || "Newsletter";
     const subject = campaign.subject || "No Subject";
 
     let sentCount = 0;
@@ -153,23 +194,36 @@ serve(async (req: Request): Promise<Response> => {
           .replace(/{{first_name}}/g, recipient.first_name || "there")
           .replace(/{{email}}/g, recipient.email);
 
-        // Send email using Resend API directly
+        // Build the from field with display name
+        // If using Reply-To pattern, include user's name in display
+        const fromField = verifiedDomains.includes(userEmailDomain)
+          ? `${userFromName} <${senderEmail}>`
+          : `${userFromName} via Broadcast <${senderEmail}>`;
+
+        // Send email using Resend API
+        const emailPayload: any = {
+          from: fromField,
+          to: [recipient.email],
+          subject: subject,
+          html: personalizedHtml,
+          headers: {
+            "X-Campaign-Id": campaignId,
+            "X-Contact-Id": recipient.id,
+          },
+        };
+
+        // Add reply-to if different from sender
+        if (replyToEmail && replyToEmail !== senderEmail) {
+          emailPayload.reply_to = replyToEmail;
+        }
+
         const emailResponse = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${RESEND_API_KEY}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            from: `${fromName} <${fromEmail}>`,
-            to: [recipient.email],
-            subject: subject,
-            html: personalizedHtml,
-            headers: {
-              "X-Campaign-Id": campaignId,
-              "X-Contact-Id": recipient.id,
-            },
-          }),
+          body: JSON.stringify(emailPayload),
         });
 
         if (!emailResponse.ok) {
@@ -183,7 +237,7 @@ serve(async (req: Request): Promise<Response> => {
         console.log(`Email sent to ${recipient.email}, ID: ${emailData?.id}`);
 
         // Record sent event
-        await supabase.from("email_events").insert({
+        await supabaseAdmin.from("email_events").insert({
           campaign_id: campaignId,
           contact_id: recipient.id,
           event_type: "sent",
@@ -191,7 +245,7 @@ serve(async (req: Request): Promise<Response> => {
         });
 
         // Update recipient record
-        await supabase
+        await supabaseAdmin
           .from("campaign_recipients")
           .update({ sent_at: new Date().toISOString() })
           .eq("campaign_id", campaignId)
@@ -205,7 +259,7 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // Update campaign analytics
-    await supabase
+    await supabaseAdmin
       .from("campaign_analytics")
       .update({ sent_count: sentCount })
       .eq("campaign_id", campaignId);
@@ -227,6 +281,8 @@ serve(async (req: Request): Promise<Response> => {
         sent: sentCount, 
         failed: failedCount,
         total: uniqueRecipients.length,
+        senderEmail,
+        replyToEmail,
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
