@@ -12,7 +12,18 @@ import { useCampaigns } from '@/hooks/useCampaigns';
 import EmailEditor from '@/components/email-editor/EmailEditor';
 import { ScheduleCampaignDialog } from '@/components/campaigns/ScheduleCampaignDialog';
 import { RecipientSelector, RecipientSelection } from '@/components/campaigns/RecipientSelector';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export default function CampaignEditor() {
   const navigate = useNavigate();
@@ -30,7 +41,9 @@ export default function CampaignEditor() {
   });
   
   const [isSaving, setIsSaving] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  const [isSendConfirmOpen, setIsSendConfirmOpen] = useState(false);
   const [recipients, setRecipients] = useState<RecipientSelection>({ type: 'all' });
 
   const handleSave = async () => {
@@ -50,6 +63,67 @@ export default function CampaignEditor() {
       toast.error('Failed to save');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSendCampaign = async () => {
+    if (!id) return;
+
+    // Validation
+    if (!formData.subject?.trim()) {
+      toast.error('Please add a subject line');
+      return;
+    }
+    if (!formData.content?.trim()) {
+      toast.error('Please add email content');
+      return;
+    }
+    if (recipients.type === 'lists' && (!recipients.listIds || recipients.listIds.length === 0)) {
+      toast.error('Please select at least one list');
+      return;
+    }
+    if (recipients.type === 'tags' && (!recipients.tagIds || recipients.tagIds.length === 0)) {
+      toast.error('Please select at least one tag');
+      return;
+    }
+    if (recipients.type === 'manual' && (!recipients.contactIds || recipients.contactIds.length === 0)) {
+      toast.error('Please select at least one contact');
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      // Save first
+      await updateCampaign.mutateAsync({
+        id,
+        name: formData.name,
+        subject: formData.subject,
+        from_name: formData.from_name || null,
+        from_email: formData.from_email || null,
+        content: { html: formData.content },
+      });
+
+      // Call edge function
+      const { data, error } = await supabase.functions.invoke('send-campaign', {
+        body: {
+          campaignId: id,
+          recipientType: recipients.type,
+          listIds: recipients.listIds,
+          tagIds: recipients.tagIds,
+          contactIds: recipients.contactIds,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success(`Campaign sent! ${data.sent} emails delivered.`);
+      navigate('/campaigns');
+    } catch (err: any) {
+      console.error('Send campaign error:', err);
+      toast.error(err.message || 'Failed to send campaign');
+    } finally {
+      setIsSending(false);
+      setIsSendConfirmOpen(false);
     }
   };
 
@@ -81,6 +155,8 @@ export default function CampaignEditor() {
     );
   }
 
+  const canSend = campaign.status === 'draft' || campaign.status === 'scheduled';
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -106,18 +182,29 @@ export default function CampaignEditor() {
                 </Button>
               </div>
             )}
-            <Button variant="outline" onClick={handleSave} disabled={isSaving}>
+            {campaign.status === 'sent' && (
+              <Badge variant="secondary" className="mr-2">Sent</Badge>
+            )}
+            <Button variant="outline" onClick={handleSave} disabled={isSaving || isSending}>
               {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
               Save Draft
             </Button>
-            <Button variant="outline" onClick={() => setIsScheduleOpen(true)}>
-              <Clock className="h-4 w-4 mr-2" />
-              Schedule
-            </Button>
-            <Button className="gradient-primary">
-              <Send className="h-4 w-4 mr-2" />
-              Send Campaign
-            </Button>
+            {canSend && (
+              <>
+                <Button variant="outline" onClick={() => setIsScheduleOpen(true)} disabled={isSending}>
+                  <Clock className="h-4 w-4 mr-2" />
+                  Schedule
+                </Button>
+                <Button 
+                  className="gradient-primary" 
+                  onClick={() => setIsSendConfirmOpen(true)}
+                  disabled={isSending}
+                >
+                  {isSending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+                  Send Campaign
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
@@ -176,12 +263,32 @@ export default function CampaignEditor() {
           </div>
         </div>
       </div>
+
       <ScheduleCampaignDialog
         open={isScheduleOpen}
         onOpenChange={setIsScheduleOpen}
         onSchedule={handleSchedule}
         isLoading={scheduleCampaign.isPending}
       />
+
+      <AlertDialog open={isSendConfirmOpen} onOpenChange={setIsSendConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send Campaign Now?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will immediately send "{formData.name || 'this campaign'}" to your selected recipients.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSendCampaign} disabled={isSending}>
+              {isSending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+              Send Now
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }
