@@ -21,9 +21,12 @@ import {
   Link2,
   LogOut,
   ChevronDown,
+  Shield,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { OrganizationSwitcher } from '@/components/organizations/OrganizationSwitcher';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -43,6 +46,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  const { data: isPlatformAdmin } = useQuery({
+    queryKey: ['isPlatformAdmin', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      const { data, error } = await supabase.rpc('is_platform_admin', { _user_id: user.id });
+      if (error) return false;
+      return data as boolean;
+    },
+    enabled: !!user?.id,
+  });
 
   const handleSignOut = async () => {
     await signOut();
@@ -88,6 +102,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </Link>
             );
           })}
+          
+          {/* Platform Admin Link - only visible to platform admins */}
+          {isPlatformAdmin && (
+            <Link
+              to="/platform-admin"
+              className={cn(
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                location.pathname === '/platform-admin'
+                  ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                  : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent'
+              )}
+            >
+              <Shield className="h-5 w-5" />
+              Platform Admin
+            </Link>
+          )}
         </nav>
 
         {/* User Menu */}
