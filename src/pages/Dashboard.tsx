@@ -2,7 +2,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Users, Mail, MousePointer, TrendingUp, Plus, ArrowUpRight } from 'lucide-react';
-
+import PlatformStatsWidget from '@/components/admin/PlatformStatsWidget';
 const stats = [
   {
     name: 'Total Contacts',
@@ -78,6 +78,9 @@ export default function Dashboard() {
             </Card>
           ))}
         </div>
+
+        {/* Admin Widget */}
+        <PlatformStatsWidget />
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
