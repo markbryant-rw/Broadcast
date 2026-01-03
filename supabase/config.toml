@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.auth-email]
 verify_jwt = false
+
+[functions.find-nearby-sales]
+verify_jwt = true

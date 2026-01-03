@@ -320,6 +320,9 @@ export type Database = {
       }
       contacts: {
         Row: {
+          address: string | null
+          address_city: string | null
+          address_suburb: string | null
           agentbuddy_customer_id: string | null
           created_at: string
           email: string
@@ -328,12 +331,16 @@ export type Database = {
           last_name: string | null
           metadata: Json | null
           organization_id: string | null
+          phone: string | null
           plan_name: string | null
           status: Database["public"]["Enums"]["contact_status"]
           updated_at: string
           user_id: string
         }
         Insert: {
+          address?: string | null
+          address_city?: string | null
+          address_suburb?: string | null
           agentbuddy_customer_id?: string | null
           created_at?: string
           email: string
@@ -342,12 +349,16 @@ export type Database = {
           last_name?: string | null
           metadata?: Json | null
           organization_id?: string | null
+          phone?: string | null
           plan_name?: string | null
           status?: Database["public"]["Enums"]["contact_status"]
           updated_at?: string
           user_id: string
         }
         Update: {
+          address?: string | null
+          address_city?: string | null
+          address_suburb?: string | null
           agentbuddy_customer_id?: string | null
           created_at?: string
           email?: string
@@ -356,6 +367,7 @@ export type Database = {
           last_name?: string | null
           metadata?: Json | null
           organization_id?: string | null
+          phone?: string | null
           plan_name?: string | null
           status?: Database["public"]["Enums"]["contact_status"]
           updated_at?: string
@@ -460,6 +472,51 @@ export type Database = {
           },
         ]
       }
+      nearby_sales: {
+        Row: {
+          address: string
+          city: string
+          created_at: string
+          id: string
+          property_type: string | null
+          reinz_id: string | null
+          sale_date: string | null
+          sale_price: number | null
+          street_name: string | null
+          street_number: string | null
+          suburb: string
+          synced_at: string | null
+        }
+        Insert: {
+          address: string
+          city: string
+          created_at?: string
+          id?: string
+          property_type?: string | null
+          reinz_id?: string | null
+          sale_date?: string | null
+          sale_price?: number | null
+          street_name?: string | null
+          street_number?: string | null
+          suburb: string
+          synced_at?: string | null
+        }
+        Update: {
+          address?: string
+          city?: string
+          created_at?: string
+          id?: string
+          property_type?: string | null
+          reinz_id?: string | null
+          sale_date?: string | null
+          sale_price?: number | null
+          street_name?: string | null
+          street_number?: string | null
+          suburb?: string
+          synced_at?: string | null
+        }
+        Relationships: []
+      }
       organization_members: {
         Row: {
           created_at: string
@@ -545,6 +602,114 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      sms_logs: {
+        Row: {
+          contact_id: string | null
+          created_at: string
+          id: string
+          message_body: string
+          organization_id: string | null
+          phone_number: string
+          related_property_id: string | null
+          sent_at: string
+          template_id: string | null
+          trigger_property_address: string | null
+          trigger_type: string | null
+          user_id: string
+        }
+        Insert: {
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          message_body: string
+          organization_id?: string | null
+          phone_number: string
+          related_property_id?: string | null
+          sent_at?: string
+          template_id?: string | null
+          trigger_property_address?: string | null
+          trigger_type?: string | null
+          user_id: string
+        }
+        Update: {
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          message_body?: string
+          organization_id?: string | null
+          phone_number?: string
+          related_property_id?: string | null
+          sent_at?: string
+          template_id?: string | null
+          trigger_property_address?: string | null
+          trigger_type?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_logs_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_logs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "sms_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sms_templates: {
+        Row: {
+          body: string
+          category: string | null
+          created_at: string
+          id: string
+          name: string
+          organization_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          category?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          organization_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          category?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tags: {
         Row: {
