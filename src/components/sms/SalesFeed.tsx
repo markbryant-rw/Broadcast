@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Home, Loader2 } from 'lucide-react';
+import { Home } from 'lucide-react';
 import SaleCard from './SaleCard';
 import { SaleWithOpportunities } from '@/hooks/useOpportunities';
 
@@ -102,9 +102,26 @@ export default function SalesFeed({
         {/* Infinite scroll trigger */}
         <div ref={loadMoreRef} className="py-2">
           {isFetchingNextPage && (
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading more...
+            <div className="space-y-2">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="p-3 space-y-1.5 rounded-lg border bg-card animate-pulse">
+                  <div className="flex justify-between items-center">
+                    <div className="h-4 w-2/3 bg-muted rounded" />
+                    <div className="h-4 w-20 bg-muted rounded" />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="h-3 w-1/2 bg-muted rounded" />
+                    <div className="h-5 w-8 bg-muted rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {!hasNextPage && !isFetchingNextPage && sales.length > 0 && (
+            <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
+              <div className="h-px flex-1 bg-border" />
+              <span>You've reached the end</span>
+              <div className="h-px flex-1 bg-border" />
             </div>
           )}
           {hasNextPage && !isFetchingNextPage && (
