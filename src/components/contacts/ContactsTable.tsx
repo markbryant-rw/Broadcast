@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { MoreHorizontal, Tag as TagIcon } from 'lucide-react';
+import { MoreHorizontal, Tag as TagIcon, MessageSquare, Phone } from 'lucide-react';
 import { Tables } from '@/integrations/supabase/types';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 import {
   Table,
   TableBody,
@@ -48,6 +49,7 @@ export default function ContactsTable({
   onSelectionChange,
 }: ContactsTableProps) {
   const [contactTags, setContactTags] = useState<Record<string, Tag[]>>({});
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchTags = async () => {
@@ -91,6 +93,7 @@ export default function ContactsTable({
           )}
           <TableHead>Name</TableHead>
           <TableHead>Email</TableHead>
+          <TableHead>Phone</TableHead>
           <TableHead>Tags</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Added</TableHead>
@@ -114,6 +117,24 @@ export default function ContactsTable({
                 : '-'}
             </TableCell>
             <TableCell>{contact.email}</TableCell>
+            <TableCell>
+              {(contact as any).phone ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">{(contact as any).phone}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => navigate('/sms')}
+                    title="Send SMS"
+                  >
+                    <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </div>
+              ) : (
+                <span className="text-muted-foreground/60 text-sm">-</span>
+              )}
+            </TableCell>
             <TableCell>
               <div className="flex flex-wrap gap-1 max-w-48">
                 {contactTags[contact.id]?.slice(0, 3).map((tag) => (

@@ -25,6 +25,10 @@ const contactSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   first_name: z.string().optional(),
   last_name: z.string().optional(),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  address_suburb: z.string().optional(),
+  address_city: z.string().optional(),
 });
 
 type ContactFormData = z.infer<typeof contactSchema>;
@@ -44,6 +48,10 @@ export default function AddContactDialog({ open, onOpenChange, onSubmit }: AddCo
       email: '',
       first_name: '',
       last_name: '',
+      phone: '',
+      address: '',
+      address_suburb: '',
+      address_city: '',
     },
   });
 
@@ -104,6 +112,60 @@ export default function AddContactDialog({ open, onOpenChange, onSubmit }: AddCo
                     <FormLabel>Last Name</FormLabel>
                     <FormControl>
                       <Input placeholder="Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone</FormLabel>
+                  <FormControl>
+                    <Input placeholder="021 123 4567" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Address</FormLabel>
+                  <FormControl>
+                    <Input placeholder="123 Main Street" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="address_suburb"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Suburb</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Glen Eden" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="address_city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Auckland" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
