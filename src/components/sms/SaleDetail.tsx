@@ -166,7 +166,7 @@ export default function SaleDetail({
       <SaleMap 
         sale={sale} 
         opportunities={opportunities}
-        mapboxToken={undefined} // Will use env var when configured
+        onSendSMS={onSendSMS}
       />
 
       <Separator />

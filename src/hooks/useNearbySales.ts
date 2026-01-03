@@ -20,6 +20,8 @@ export interface NearbySale {
   land_area: number | null;
   days_to_sell: number | null;
   valuation: number | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 const PAGE_SIZE = 20;
