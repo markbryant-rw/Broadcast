@@ -17,6 +17,12 @@ export interface SMSTemplate {
 type SMSTemplateInsert = Omit<SMSTemplate, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
 type SMSTemplateUpdate = Partial<SMSTemplateInsert> & { id: string };
 
+const DEFAULT_TEMPLATE = {
+  name: 'Nearby Sale Alert',
+  category: 'nearby_sale',
+  body: `Hi {{first_name}}, great news! A property near you at {{sale_address}} just sold for {{sale_price}}. Wondering what your home might be worth? I'd be happy to provide a free appraisal. Reply YES for more info!`,
+};
+
 export function useSMSTemplates() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -30,6 +36,25 @@ export function useSMSTemplates() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      
+      // Check if default template exists, if not create it
+      const hasNearbySaleTemplate = data?.some(t => t.category === 'nearby_sale');
+      if (!hasNearbySaleTemplate && user) {
+        const { data: newTemplate, error: insertError } = await supabase
+          .from('sms_templates')
+          .insert({
+            ...DEFAULT_TEMPLATE,
+            user_id: user.id,
+            organization_id: null,
+          })
+          .select()
+          .single();
+        
+        if (!insertError && newTemplate) {
+          return [newTemplate, ...(data || [])] as SMSTemplate[];
+        }
+      }
+      
       return data as SMSTemplate[];
     },
     enabled: !!user,

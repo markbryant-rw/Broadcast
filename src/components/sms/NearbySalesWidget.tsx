@@ -175,6 +175,7 @@ export default function NearbySalesWidget() {
               contact={selectedMatch.contact}
               triggerType="nearby_sale"
               triggerPropertyAddress={selectedMatch.sale.address}
+              salePrice={selectedMatch.sale.sale_price}
               onSent={() => setSelectedMatch(null)}
             />
           )}

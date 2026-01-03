@@ -248,6 +248,20 @@ export default function SMSTemplateManager() {
                 >
                   {'{{address}}'}
                 </Badge>
+                <Badge 
+                  variant="outline" 
+                  className="cursor-pointer hover:bg-muted text-primary border-primary/50"
+                  onClick={() => setFormData(prev => ({ ...prev, body: prev.body + '{{sale_address}}' }))}
+                >
+                  {'{{sale_address}}'}
+                </Badge>
+                <Badge 
+                  variant="outline" 
+                  className="cursor-pointer hover:bg-muted text-primary border-primary/50"
+                  onClick={() => setFormData(prev => ({ ...prev, body: prev.body + '{{sale_price}}' }))}
+                >
+                  {'{{sale_price}}'}
+                </Badge>
               </div>
             </div>
 

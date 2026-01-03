@@ -28,6 +28,7 @@ interface SMSComposerProps {
   contact: Contact | null;
   triggerType?: string;
   triggerPropertyAddress?: string;
+  salePrice?: number | null;
   onSent?: () => void;
 }
 
@@ -37,18 +38,31 @@ const MERGE_FIELDS = [
   { key: '{{first_name}}', label: 'First Name' },
   { key: '{{last_name}}', label: 'Last Name' },
   { key: '{{address}}', label: 'Address' },
+  { key: '{{sale_address}}', label: 'Sale Address', isSaleField: true },
+  { key: '{{sale_price}}', label: 'Sale Price', isSaleField: true },
 ];
 
 export default function SMSComposer({ 
   contact, 
   triggerType = 'manual',
   triggerPropertyAddress,
+  salePrice,
   onSent 
 }: SMSComposerProps) {
   const [message, setMessage] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const { templates } = useSMSTemplates();
   const { logSMS } = useSMSLogs();
+
+  // Format price for display
+  const formatPrice = (price: number | null | undefined) => {
+    if (!price) return '';
+    return new Intl.NumberFormat('en-NZ', {
+      style: 'currency',
+      currency: 'NZD',
+      maximumFractionDigits: 0,
+    }).format(price);
+  };
 
   // Apply merge fields to message
   const getProcessedMessage = () => {
@@ -57,7 +71,9 @@ export default function SMSComposer({
     return message
       .replace(/\{\{first_name\}\}/g, contact.first_name || '')
       .replace(/\{\{last_name\}\}/g, contact.last_name || '')
-      .replace(/\{\{address\}\}/g, contact.address || '');
+      .replace(/\{\{address\}\}/g, contact.address || '')
+      .replace(/\{\{sale_address\}\}/g, triggerPropertyAddress || '')
+      .replace(/\{\{sale_price\}\}/g, formatPrice(salePrice));
   };
 
   // Handle template selection
