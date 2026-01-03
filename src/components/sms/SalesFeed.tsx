@@ -4,6 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Home } from 'lucide-react';
 import SaleCard from './SaleCard';
 import { SaleWithOpportunities } from '@/hooks/useOpportunities';
+import { useSaleCompletionMap } from '@/hooks/useSaleCompletions';
 
 interface SaleProgress {
   contacted: number;
@@ -32,6 +33,7 @@ export default function SalesFeed({
   onLoadMore,
   progressMap = {},
 }: SalesFeedProps) {
+  const completionMap = useSaleCompletionMap();
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
@@ -111,6 +113,7 @@ export default function SalesFeed({
             isSelected={sale.id === selectedSaleId}
             onSelect={() => onSelectSale(sale)}
             progress={progressMap[sale.id]}
+            isComplete={completionMap.has(sale.id)}
           />
         ))}
         

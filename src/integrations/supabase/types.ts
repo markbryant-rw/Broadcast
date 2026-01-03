@@ -923,6 +923,35 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sale_completions: {
+        Row: {
+          completed_at: string
+          id: string
+          sale_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          id?: string
+          sale_id: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          id?: string
+          sale_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_sale_completions_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "nearby_sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_suburb_favorites: {
         Row: {
           city: string | null

@@ -52,14 +52,31 @@ export function useFavoriteSuburbsWithCounts() {
     queryFn: async (): Promise<SuburbWithCount[]> => {
       if (!user || favorites.length === 0) return [];
       
-      // Get sale counts, contact counts, and action counts for each favorite suburb
+      // Get sale counts, contact counts, action counts, and completion counts for each favorite suburb
       const suburbCounts = await Promise.all(
         favorites.map(async (fav) => {
-          // Get sale count
-          const { count: saleCount } = await supabase
+          // Get all sales in this suburb
+          const { data: salesInSuburb } = await supabase
             .from('nearby_sales')
-            .select('*', { count: 'exact', head: true })
+            .select('id')
             .eq('suburb', fav.suburb);
+          
+          const saleIds = salesInSuburb?.map(s => s.id) || [];
+          const totalSales = saleIds.length;
+          
+          // Get completed sales count for this suburb
+          let completedSalesCount = 0;
+          if (saleIds.length > 0) {
+            const { count } = await supabase
+              .from('user_sale_completions')
+              .select('*', { count: 'exact', head: true })
+              .in('sale_id', saleIds)
+              .eq('user_id', user.id);
+            completedSalesCount = count || 0;
+          }
+          
+          // Active sales = total - completed
+          const activeSaleCount = totalSales - completedSalesCount;
           
           // Get contact count (opportunities) in this suburb
           const { count: contactCount } = await supabase
@@ -68,13 +85,6 @@ export function useFavoriteSuburbsWithCounts() {
             .ilike('address_suburb', fav.suburb);
           
           // Get contacted/ignored actions count for this suburb
-          const { data: salesInSuburb } = await supabase
-            .from('nearby_sales')
-            .select('id')
-            .eq('suburb', fav.suburb);
-          
-          const saleIds = salesInSuburb?.map(s => s.id) || [];
-          
           let contactedCount = 0;
           if (saleIds.length > 0) {
             const { count } = await supabase
@@ -88,7 +98,7 @@ export function useFavoriteSuburbsWithCounts() {
           return {
             suburb: fav.suburb,
             city: fav.city,
-            saleCount: saleCount || 0,
+            saleCount: activeSaleCount, // Now shows only active (non-completed) sales
             isFavorite: true,
             displayOrder: fav.display_order,
             contactedCount,

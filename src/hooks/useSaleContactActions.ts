@@ -65,7 +65,19 @@ export function useMarkSaleComplete() {
     mutationFn: async ({ saleId, suburb }: MarkSaleCompleteParams) => {
       if (!user) throw new Error('Not authenticated');
 
-      // Get all contacts in this suburb that haven't been actioned for this sale
+      // Step 1: Mark the sale itself as complete in user_sale_completions
+      const { error: completionError } = await supabase
+        .from('user_sale_completions')
+        .upsert({
+          sale_id: saleId,
+          user_id: user.id,
+        }, {
+          onConflict: 'user_id,sale_id'
+        });
+
+      if (completionError) throw completionError;
+
+      // Step 2: Also mark any existing contacts as ignored (existing behavior)
       const { data: contacts, error: contactsError } = await supabase
         .from('contacts')
         .select('id')
@@ -108,6 +120,7 @@ export function useMarkSaleComplete() {
       queryClient.invalidateQueries({ queryKey: ['opportunities-for-sale'] });
       queryClient.invalidateQueries({ queryKey: ['sale-progress'] });
       queryClient.invalidateQueries({ queryKey: ['suburb-favorites-with-counts'] });
+      queryClient.invalidateQueries({ queryKey: ['sale-completions'] });
       toast({ title: 'Sale marked as complete' });
     },
     onError: () => {
