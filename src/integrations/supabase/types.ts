@@ -327,9 +327,12 @@ export type Database = {
           created_at: string
           email: string
           first_name: string | null
+          geocoded_at: string | null
           id: string
           last_name: string | null
           last_sms_at: string | null
+          latitude: number | null
+          longitude: number | null
           metadata: Json | null
           organization_id: string | null
           phone: string | null
@@ -346,9 +349,12 @@ export type Database = {
           created_at?: string
           email: string
           first_name?: string | null
+          geocoded_at?: string | null
           id?: string
           last_name?: string | null
           last_sms_at?: string | null
+          latitude?: number | null
+          longitude?: number | null
           metadata?: Json | null
           organization_id?: string | null
           phone?: string | null
@@ -365,9 +371,12 @@ export type Database = {
           created_at?: string
           email?: string
           first_name?: string | null
+          geocoded_at?: string | null
           id?: string
           last_name?: string | null
           last_sms_at?: string | null
+          latitude?: number | null
+          longitude?: number | null
           metadata?: Json | null
           organization_id?: string | null
           phone?: string | null
@@ -483,8 +492,11 @@ export type Database = {
           created_at: string
           days_to_sell: number | null
           floor_area: number | null
+          geocoded_at: string | null
           id: string
           land_area: number | null
+          latitude: number | null
+          longitude: number | null
           property_type: string | null
           reinz_id: string | null
           sale_date: string | null
@@ -503,8 +515,11 @@ export type Database = {
           created_at?: string
           days_to_sell?: number | null
           floor_area?: number | null
+          geocoded_at?: string | null
           id?: string
           land_area?: number | null
+          latitude?: number | null
+          longitude?: number | null
           property_type?: string | null
           reinz_id?: string | null
           sale_date?: string | null
@@ -523,8 +538,11 @@ export type Database = {
           created_at?: string
           days_to_sell?: number | null
           floor_area?: number | null
+          geocoded_at?: string | null
           id?: string
           land_area?: number | null
+          latitude?: number | null
+          longitude?: number | null
           property_type?: string | null
           reinz_id?: string | null
           sale_date?: string | null
