@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { NearbySale } from './useNearbySales';
 
+export type RelevanceLevel = 'high' | 'medium' | 'low';
+
 export interface Opportunity {
   contact: {
     id: string;
@@ -19,6 +21,9 @@ export interface Opportunity {
   sameStreet: boolean;
   daysSinceContact: number | null;
   neverContacted: boolean;
+  isOnCooldown: boolean;
+  cooldownDaysRemaining: number | null;
+  relevance: RelevanceLevel;
 }
 
 export interface SaleWithOpportunities extends NearbySale {
@@ -51,11 +56,26 @@ function isSameStreet(
   return contactAddress.toLowerCase().includes(saleStreetName.toLowerCase());
 }
 
-export function useOpportunitiesForSale(sale: NearbySale | null) {
+// Determine relevance based on proximity
+function getRelevance(
+  sameStreet: boolean,
+  distance: number | null
+): RelevanceLevel {
+  if (sameStreet) {
+    // Same street and within 20 houses (~200m)
+    if (distance !== null && distance <= 200) return 'high';
+    // Same street but further away
+    return 'medium';
+  }
+  // Different street in suburb
+  return 'low';
+}
+
+export function useOpportunitiesForSale(sale: NearbySale | null, cooldownDays: number = 7) {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['opportunities', sale?.id, user?.id],
+    queryKey: ['opportunities', sale?.id, user?.id, cooldownDays],
     queryFn: async () => {
       if (!sale) return [];
 
@@ -84,17 +104,32 @@ export function useOpportunitiesForSale(sale: NearbySale | null) {
             )
           : null;
 
+        const neverContacted = contact.last_sms_at === null;
+        const isOnCooldown = !neverContacted && daysSinceContact !== null && daysSinceContact < cooldownDays;
+        const cooldownDaysRemaining = isOnCooldown && daysSinceContact !== null
+          ? cooldownDays - daysSinceContact
+          : null;
+
+        const relevance = getRelevance(sameStreet, distance);
+
         return {
           contact,
           distance,
           sameStreet,
           daysSinceContact,
-          neverContacted: contact.last_sms_at === null,
+          neverContacted,
+          isOnCooldown,
+          cooldownDaysRemaining,
+          relevance,
         };
       });
 
-      // Sort by: same street first, then by distance, then by never contacted
+      // Sort by: not on cooldown first, then same street, then by distance, then by never contacted
       return opportunities.sort((a, b) => {
+        // Not on cooldown first
+        if (!a.isOnCooldown && b.isOnCooldown) return -1;
+        if (a.isOnCooldown && !b.isOnCooldown) return 1;
+
         // Same street first
         if (a.sameStreet && !b.sameStreet) return -1;
         if (!a.sameStreet && b.sameStreet) return 1;

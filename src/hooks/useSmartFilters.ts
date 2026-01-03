@@ -4,6 +4,7 @@ import { NearbySale } from './useNearbySales';
 export type FilterPreset = 'recent' | 'smart-match' | 'high-value' | 'by-suburb';
 export type DateRange = '7d' | '30d' | '90d' | 'all' | 'custom';
 export type PriceRange = 'any' | 'under500k' | '500k-1m' | 'over1m';
+export type CooldownPeriod = 3 | 7 | 14 | 30;
 
 export interface SmartFilters {
   preset: FilterPreset;
@@ -16,6 +17,7 @@ export interface SmartFilters {
   customEndDate: Date | null;
   searchQuery: string;
   hideCompleted: boolean;
+  cooldownDays: CooldownPeriod;
 }
 
 const defaultFilters: SmartFilters = {
@@ -29,6 +31,7 @@ const defaultFilters: SmartFilters = {
   customEndDate: null,
   searchQuery: '',
   hideCompleted: false,
+  cooldownDays: 7,
 };
 
 export function useSmartFilters() {
