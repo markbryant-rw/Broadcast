@@ -26,6 +26,14 @@ export default function HomeLayout({ children }: HomeLayoutProps) {
   };
 
   const userInitials = user?.user_metadata?.first_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U';
+  const firstName = user?.user_metadata?.first_name || null;
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -41,6 +49,13 @@ export default function HomeLayout({ children }: HomeLayoutProps) {
           </div>
           <span className="text-lg font-display font-bold">Broadcast</span>
         </Link>
+
+        {/* Personalized Greeting */}
+        <div className="hidden sm:block text-center">
+          <span className="text-sm text-muted-foreground">
+            {getGreeting()}{firstName ? `, ${firstName}` : ''}! 👋
+          </span>
+        </div>
 
         {/* User Menu */}
         <DropdownMenu>
