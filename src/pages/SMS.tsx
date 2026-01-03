@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
-import DashboardLayout from '@/components/layout/DashboardLayout';
+import SMSLayout from '@/components/layout/SMSLayout';
 import SmartFilters from '@/components/sms/SmartFilters';
 import SalesFeed from '@/components/sms/SalesFeed';
 import SaleDetail from '@/components/sms/SaleDetail';
@@ -82,7 +82,7 @@ export default function SMS() {
   const hotSales = salesWithOpportunities.filter(s => s.opportunityCount > 0).length;
 
   return (
-    <DashboardLayout>
+    <SMSLayout>
       <div className="space-y-6">
         <Tabs defaultValue="opportunities" className="space-y-6">
           {/* Header with Stats */}
@@ -267,6 +267,6 @@ export default function SMS() {
         isOpen={bulkSmsOpen}
         onClose={handleCloseBulkSms}
       />
-    </DashboardLayout>
+    </SMSLayout>
   );
 }
