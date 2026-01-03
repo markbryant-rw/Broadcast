@@ -61,9 +61,9 @@ export default function SMS() {
   // Selected sale state
   const [selectedSale, setSelectedSale] = useState<SaleWithOpportunities | null>(null);
   
-  // Get opportunities for selected sale
+  // Get opportunities for selected sale (with cooldown filter)
   const { data: opportunities = [], isLoading: isLoadingOppDetails } = 
-    useOpportunitiesForSale(selectedSale);
+    useOpportunitiesForSale(selectedSale, filters.cooldownDays);
   
   // SMS composer state
   const [smsComposerOpen, setSmsComposerOpen] = useState(false);

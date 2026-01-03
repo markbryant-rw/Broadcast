@@ -1,4 +1,4 @@
-import { Search, Sparkles, DollarSign, MapPin, Clock, CheckCircle } from 'lucide-react';
+import { Search, Sparkles, DollarSign, MapPin, Clock, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,7 +11,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { SmartFilters as SmartFiltersType, FilterPreset, DateRange, PriceRange } from '@/hooks/useSmartFilters';
+import { SmartFilters as SmartFiltersType, FilterPreset, DateRange, PriceRange, CooldownPeriod } from '@/hooks/useSmartFilters';
 
 interface SmartFiltersProps {
   filters: SmartFiltersType;
@@ -121,6 +121,25 @@ export default function SmartFilters({
             </SelectContent>
           </Select>
         )}
+
+        {/* Cooldown Period Selector */}
+        <div className="flex items-center gap-2">
+          <Timer className="h-4 w-4 text-muted-foreground" />
+          <Select
+            value={filters.cooldownDays.toString()}
+            onValueChange={(value) => onUpdateFilter('cooldownDays', parseInt(value) as CooldownPeriod)}
+          >
+            <SelectTrigger className="w-[130px] bg-background">
+              <SelectValue placeholder="Cooldown" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="3">3 day cooldown</SelectItem>
+              <SelectItem value="7">7 day cooldown</SelectItem>
+              <SelectItem value="14">14 day cooldown</SelectItem>
+              <SelectItem value="30">30 day cooldown</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Hide Completed Toggle */}
         <div className="flex items-center gap-2">

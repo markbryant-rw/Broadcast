@@ -1,8 +1,9 @@
-import { MessageSquare, MapPin, Clock, Sparkles, Star } from 'lucide-react';
+import { MessageSquare, MapPin, Clock, Sparkles, Star, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Opportunity } from '@/hooks/useOpportunities';
+import { cn } from '@/lib/utils';
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
@@ -27,6 +28,15 @@ function getContactStatus(opportunity: Opportunity): {
   variant: 'default' | 'secondary' | 'destructive' | 'outline';
   className?: string;
 } {
+  // Show cooldown status if on cooldown
+  if (opportunity.isOnCooldown && opportunity.cooldownDaysRemaining !== null) {
+    return {
+      label: `${opportunity.cooldownDaysRemaining}d cooldown`,
+      variant: 'outline',
+      className: 'text-muted-foreground border-muted-foreground/30',
+    };
+  }
+  
   if (opportunity.neverContacted) {
     return {
       label: 'NEVER CONTACTED',
@@ -50,15 +60,28 @@ function getContactStatus(opportunity: Opportunity): {
 }
 
 export default function OpportunityCard({ opportunity, onSendSMS, hideButton = false }: OpportunityCardProps) {
-  const { contact } = opportunity;
+  const { contact, isOnCooldown } = opportunity;
   const status = getContactStatus(opportunity);
   const hasPhone = !!contact.phone;
+  const isDisabled = !hasPhone || isOnCooldown;
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
+    <div 
+      className={cn(
+        "flex items-center gap-3 p-3 rounded-lg border bg-card transition-colors",
+        isOnCooldown 
+          ? "opacity-50 bg-muted/30" 
+          : "hover:bg-accent/5"
+      )}
+    >
       {/* Avatar */}
       <Avatar className="h-10 w-10 shrink-0">
-        <AvatarFallback className="bg-primary/10 text-primary font-medium">
+        <AvatarFallback className={cn(
+          "font-medium",
+          isOnCooldown 
+            ? "bg-muted text-muted-foreground" 
+            : "bg-primary/10 text-primary"
+        )}>
           {getInitials(contact.first_name, contact.last_name)}
         </AvatarFallback>
       </Avatar>
@@ -66,10 +89,13 @@ export default function OpportunityCard({ opportunity, onSendSMS, hideButton = f
       {/* Info */}
       <div className="flex-1 min-w-0 space-y-1">
         <div className="flex items-center gap-2">
-          <span className="font-medium text-sm truncate">
+          <span className={cn(
+            "font-medium text-sm truncate",
+            isOnCooldown && "text-muted-foreground"
+          )}>
             {contact.first_name || 'Unknown'} {contact.last_name || ''}
           </span>
-          {opportunity.sameStreet && (
+          {opportunity.sameStreet && !isOnCooldown && (
             <Badge variant="outline" className="shrink-0 text-xs gap-1">
               <Star className="h-2.5 w-2.5 fill-current" />
               Same Street
@@ -77,7 +103,10 @@ export default function OpportunityCard({ opportunity, onSendSMS, hideButton = f
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <div className={cn(
+          "flex flex-wrap items-center gap-2 text-xs",
+          isOnCooldown ? "text-muted-foreground/60" : "text-muted-foreground"
+        )}>
           {contact.address && (
             <span className="flex items-center gap-1 truncate">
               <MapPin className="h-3 w-3 shrink-0" />
@@ -92,11 +121,15 @@ export default function OpportunityCard({ opportunity, onSendSMS, hideButton = f
         <div className="flex items-center gap-2">
           {status.label && (
             <Badge variant={status.variant} className={`text-xs ${status.className || ''}`}>
-              <Clock className="h-2.5 w-2.5 mr-1" />
+              {isOnCooldown ? (
+                <Timer className="h-2.5 w-2.5 mr-1" />
+              ) : (
+                <Clock className="h-2.5 w-2.5 mr-1" />
+              )}
               {status.label}
             </Badge>
           )}
-          {opportunity.neverContacted && opportunity.sameStreet && (
+          {opportunity.neverContacted && opportunity.sameStreet && !isOnCooldown && (
             <Badge className="bg-success text-success-foreground text-xs gap-1">
               <Sparkles className="h-2.5 w-2.5" />
               HOT
@@ -105,20 +138,40 @@ export default function OpportunityCard({ opportunity, onSendSMS, hideButton = f
         </div>
       </div>
 
-      {/* Send Button - conditionally hidden in select mode */}
+      {/* Send Button - conditionally hidden in select mode or disabled on cooldown */}
       {!hideButton && (
         <Button
           size="sm"
-          className="shrink-0 gap-1.5 bg-success hover:bg-success/90 text-success-foreground"
+          className={cn(
+            "shrink-0 gap-1.5",
+            isOnCooldown 
+              ? "bg-muted text-muted-foreground hover:bg-muted cursor-not-allowed" 
+              : "bg-success hover:bg-success/90 text-success-foreground"
+          )}
           onClick={e => {
             e.stopPropagation();
-            onSendSMS();
+            if (!isDisabled) onSendSMS();
           }}
-          disabled={!hasPhone}
-          title={hasPhone ? 'Send SMS' : 'No phone number'}
+          disabled={isDisabled}
+          title={
+            isOnCooldown 
+              ? `On cooldown for ${opportunity.cooldownDaysRemaining} more days`
+              : hasPhone 
+                ? 'Send SMS' 
+                : 'No phone number'
+          }
         >
-          <MessageSquare className="h-4 w-4" />
-          <span className="hidden sm:inline">Send SMS</span>
+          {isOnCooldown ? (
+            <>
+              <Timer className="h-4 w-4" />
+              <span className="hidden sm:inline">{opportunity.cooldownDaysRemaining}d</span>
+            </>
+          ) : (
+            <>
+              <MessageSquare className="h-4 w-4" />
+              <span className="hidden sm:inline">Send SMS</span>
+            </>
+          )}
         </Button>
       )}
     </div>
