@@ -1,4 +1,5 @@
 import { Users, BarChart3, FolderOpen, Layout, Link, Trophy } from 'lucide-react';
+import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 
 const features = [
   {
@@ -34,10 +35,16 @@ const features = [
 ];
 
 export function FeatureGrid() {
+  const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation({ threshold: 0.2 });
+  const { ref: gridRef, isVisible: gridVisible } = useScrollAnimation({ threshold: 0.1 });
+
   return (
     <section className="py-20 lg:py-28">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
+        <div 
+          ref={headerRef}
+          className={`text-center mb-16 transition-all duration-700 ${headerVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+        >
           <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
             Everything you need to succeed
           </h2>
@@ -46,11 +53,12 @@ export function FeatureGrid() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+        <div ref={gridRef} className="grid grid-cols-2 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
           {features.map((feature, index) => (
             <div
               key={feature.title}
-              className={`p-6 rounded-xl bg-card border border-border hover-lift animate-fade-in-up animate-stagger-${index + 1}`}
+              className={`p-6 rounded-xl bg-card border border-border hover-lift transition-all duration-500 ${gridVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-95'}`}
+              style={{ transitionDelay: gridVisible ? `${index * 100}ms` : '0ms' }}
             >
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
                 <feature.icon className="h-5 w-5 text-primary" />

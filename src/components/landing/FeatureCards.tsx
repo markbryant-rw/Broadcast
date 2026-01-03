@@ -1,10 +1,15 @@
 import { MessageSquare, Mail, MapPin, Filter, Zap, PenTool, BarChart3, Sparkles } from 'lucide-react';
+import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 
 export function FeatureCards() {
+  const { ref: sectionRef, isVisible: sectionVisible } = useScrollAnimation({ threshold: 0.1 });
+  const { ref: smsRef, isVisible: smsVisible } = useScrollAnimation({ threshold: 0.2 });
+  const { ref: emailRef, isVisible: emailVisible } = useScrollAnimation({ threshold: 0.2 });
+
   return (
-    <section className="py-20 lg:py-28">
+    <section ref={sectionRef} className="py-20 lg:py-28">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
+        <div className={`text-center mb-16 transition-all duration-700 ${sectionVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
             Two powerful ways to connect
           </h2>
@@ -15,7 +20,10 @@ export function FeatureCards() {
 
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
           {/* SMS Card */}
-          <div className="group relative bg-card rounded-2xl border border-border p-8 hover-lift overflow-hidden">
+          <div 
+            ref={smsRef}
+            className={`group relative bg-card rounded-2xl border border-border p-8 hover-lift overflow-hidden transition-all duration-700 delay-100 ${smsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+          >
             {/* Gradient overlay on hover */}
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             
@@ -66,7 +74,10 @@ export function FeatureCards() {
           </div>
 
           {/* Email Card */}
-          <div className="group relative bg-card rounded-2xl border border-border p-8 hover-lift overflow-hidden">
+          <div 
+            ref={emailRef}
+            className={`group relative bg-card rounded-2xl border border-border p-8 hover-lift overflow-hidden transition-all duration-700 delay-200 ${emailVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+          >
             {/* Gradient overlay on hover */}
             <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             
