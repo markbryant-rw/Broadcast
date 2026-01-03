@@ -5,14 +5,27 @@ import { useNearbySales } from '@/hooks/useNearbySales';
 import { useCampaigns } from '@/hooks/useCampaigns';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function DashboardHero() {
+  const { user } = useAuth();
+  
   // SMS Stats
-  const { data: opportunities } = useHotOpportunities(100); // Get all for count
+  const { data: opportunities } = useHotOpportunities(100);
   const { sales } = useNearbySales();
   
   // Email Stats
   const { campaigns } = useCampaigns();
+
+  // Get greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const firstName = user?.user_metadata?.first_name || null;
 
   // Calculate new sales this week
   const sevenDaysAgo = new Date();
@@ -45,17 +58,17 @@ export default function DashboardHero() {
 
   return (
     <div className="space-y-8">
-      {/* Hero Header */}
+      {/* Hero Header with Personalized Greeting */}
       <div 
-        className="text-center space-y-3 pt-4 animate-fade-in opacity-0"
+        className="text-center space-y-2 pt-4 animate-fade-in opacity-0"
         style={{ animationDelay: '0ms', animationFillMode: 'forwards' }}
       >
+        <p className="text-muted-foreground text-lg">
+          {getGreeting()}{firstName ? `, ${firstName}` : ''}! 👋
+        </p>
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold">
           What would you like to do?
         </h1>
-        <p className="text-muted-foreground text-lg max-w-md mx-auto">
-          Choose your mode
-        </p>
       </div>
 
       {/* Hero Cards */}
