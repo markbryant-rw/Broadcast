@@ -8,6 +8,8 @@ import SMSTemplateManager from '@/components/sms/SMSTemplateManager';
 import SMSLogTable from '@/components/sms/SMSLogTable';
 import NearbySalesWidget from '@/components/sms/NearbySalesWidget';
 import SalesUploader from '@/components/sales/SalesUploader';
+import SalesDataTable from '@/components/sales/SalesDataTable';
+import { usePlatformAdmin } from '@/hooks/usePlatformAdmin';
 
 interface Contact {
   id: string;
@@ -21,6 +23,7 @@ interface Contact {
 
 export default function SMS() {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const { isPlatformAdmin } = usePlatformAdmin();
 
   return (
     <DashboardLayout>
@@ -38,7 +41,9 @@ export default function SMS() {
             <TabsTrigger value="compose">Compose</TabsTrigger>
             <TabsTrigger value="templates">Templates</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
-            <TabsTrigger value="sales">Sales Data</TabsTrigger>
+            {isPlatformAdmin && (
+              <TabsTrigger value="sales">Sales Data</TabsTrigger>
+            )}
           </TabsList>
 
           {/* Compose Tab */}
@@ -101,10 +106,13 @@ export default function SMS() {
             </Card>
           </TabsContent>
 
-          {/* Sales Data Tab */}
-          <TabsContent value="sales" className="space-y-6">
-            <SalesUploader />
-          </TabsContent>
+          {/* Sales Data Tab - Platform Admin Only */}
+          {isPlatformAdmin && (
+            <TabsContent value="sales" className="space-y-6">
+              <SalesUploader />
+              <SalesDataTable />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </DashboardLayout>
