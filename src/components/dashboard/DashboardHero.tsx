@@ -46,7 +46,10 @@ export default function DashboardHero() {
   return (
     <div className="space-y-8">
       {/* Hero Header */}
-      <div className="text-center space-y-3 pt-4">
+      <div 
+        className="text-center space-y-3 pt-4 animate-fade-in opacity-0"
+        style={{ animationDelay: '0ms', animationFillMode: 'forwards' }}
+      >
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold">
           What would you like to do?
         </h1>
@@ -60,8 +63,8 @@ export default function DashboardHero() {
         {/* SMS Card */}
         <Link
           to="/sms"
-          className="group relative overflow-hidden rounded-2xl p-6 sm:p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
-          style={{ background: 'var(--gradient-primary)' }}
+          className="group relative overflow-hidden rounded-2xl p-6 sm:p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl animate-fade-in opacity-0"
+          style={{ background: 'var(--gradient-primary)', animationDelay: '100ms', animationFillMode: 'forwards' }}
         >
           <div className="relative z-10 flex flex-col h-full min-h-[220px]">
             <div className="h-14 w-14 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center mb-4">
@@ -117,8 +120,8 @@ export default function DashboardHero() {
         {/* Email Card */}
         <Link
           to="/campaigns"
-          className="group relative overflow-hidden rounded-2xl p-6 sm:p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
-          style={{ background: 'var(--gradient-accent)' }}
+          className="group relative overflow-hidden rounded-2xl p-6 sm:p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl animate-fade-in opacity-0"
+          style={{ background: 'var(--gradient-accent)', animationDelay: '200ms', animationFillMode: 'forwards' }}
         >
           <div className="relative z-10 flex flex-col h-full min-h-[220px]">
             <div className="h-14 w-14 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center mb-4">
