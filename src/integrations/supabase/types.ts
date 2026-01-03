@@ -678,6 +678,48 @@ export type Database = {
         }
         Relationships: []
       }
+      sale_contact_actions: {
+        Row: {
+          action: string
+          contact_id: string
+          created_at: string
+          id: string
+          sale_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          contact_id: string
+          created_at?: string
+          id?: string
+          sale_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          contact_id?: string
+          created_at?: string
+          id?: string
+          sale_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_contact_actions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_contact_actions_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "nearby_sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sms_logs: {
         Row: {
           contact_id: string | null

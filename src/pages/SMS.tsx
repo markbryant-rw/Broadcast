@@ -16,6 +16,7 @@ import { usePlatformAdmin } from '@/hooks/usePlatformAdmin';
 import { useNearbySalesPaginated, NearbySale } from '@/hooks/useNearbySales';
 import { useSmartFilters } from '@/hooks/useSmartFilters';
 import { useSalesWithOpportunities, useOpportunitiesForSale, useSuburbsList, Opportunity, SaleWithOpportunities } from '@/hooks/useOpportunities';
+import { useSaleProgressMap } from '@/hooks/useSaleProgress';
 import { MessageSquare, Sparkles, History, FileText, Database, TrendingUp } from 'lucide-react';
 
 export default function SMS() {
@@ -40,6 +41,10 @@ export default function SMS() {
   
   // Get sales with opportunity counts
   const { data: salesWithOpportunities = [] } = useSalesWithOpportunities(filteredSales);
+  
+  // Get progress data for visible sales
+  const saleIds = salesWithOpportunities.map(s => s.id);
+  const { data: progressMap = {} } = useSaleProgressMap(saleIds);
   
   // Selected sale state
   const [selectedSale, setSelectedSale] = useState<SaleWithOpportunities | null>(null);
@@ -184,6 +189,7 @@ export default function SMS() {
                       hasNextPage={hasNextPage}
                       isFetchingNextPage={isFetchingNextPage}
                       onLoadMore={() => fetchNextPage()}
+                      progressMap={progressMap}
                     />
                   </CardContent>
                 </Card>

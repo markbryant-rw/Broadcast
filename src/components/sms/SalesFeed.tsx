@@ -5,6 +5,12 @@ import { Home } from 'lucide-react';
 import SaleCard from './SaleCard';
 import { SaleWithOpportunities } from '@/hooks/useOpportunities';
 
+interface SaleProgress {
+  contacted: number;
+  ignored: number;
+  smsCount: number;
+}
+
 interface SalesFeedProps {
   sales: SaleWithOpportunities[];
   selectedSaleId: string | null;
@@ -13,6 +19,7 @@ interface SalesFeedProps {
   hasNextPage?: boolean;
   isFetchingNextPage?: boolean;
   onLoadMore?: () => void;
+  progressMap?: Record<string, SaleProgress>;
 }
 
 export default function SalesFeed({
@@ -23,6 +30,7 @@ export default function SalesFeed({
   hasNextPage = false,
   isFetchingNextPage = false,
   onLoadMore,
+  progressMap = {},
 }: SalesFeedProps) {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -96,6 +104,7 @@ export default function SalesFeed({
             sale={sale}
             isSelected={sale.id === selectedSaleId}
             onSelect={() => onSelectSale(sale)}
+            progress={progressMap[sale.id]}
           />
         ))}
         
