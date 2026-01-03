@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
@@ -13,23 +13,33 @@ import SMSLogTable from '@/components/sms/SMSLogTable';
 import SalesUploader from '@/components/sales/SalesUploader';
 import SalesDataTable from '@/components/sales/SalesDataTable';
 import { usePlatformAdmin } from '@/hooks/usePlatformAdmin';
-import { useNearbySales, NearbySale } from '@/hooks/useNearbySales';
+import { useNearbySalesPaginated, NearbySale } from '@/hooks/useNearbySales';
 import { useSmartFilters } from '@/hooks/useSmartFilters';
 import { useSalesWithOpportunities, useOpportunitiesForSale, useSuburbsList, Opportunity, SaleWithOpportunities } from '@/hooks/useOpportunities';
 import { MessageSquare, Sparkles, History, FileText, Database, TrendingUp } from 'lucide-react';
 
 export default function SMS() {
   const { isPlatformAdmin } = usePlatformAdmin();
-  const { sales: rawSales, isLoading: isLoadingSales } = useNearbySales();
+  const { 
+    data: salesPages, 
+    isLoading: isLoadingSales,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useNearbySalesPaginated();
   const { data: suburbs = [] } = useSuburbsList();
   const { filters, updateFilter, setPreset, filterSales } = useSmartFilters();
+  
+  // Flatten paginated sales
+  const rawSales = useMemo(() => {
+    return salesPages?.pages.flatMap(page => page.sales) || [];
+  }, [salesPages]);
   
   // Filter sales
   const filteredSales = filterSales(rawSales);
   
   // Get sales with opportunity counts
-  const { data: salesWithOpportunities = [], isLoading: isLoadingOpportunities } = 
-    useSalesWithOpportunities(filteredSales);
+  const { data: salesWithOpportunities = [] } = useSalesWithOpportunities(filteredSales);
   
   // Selected sale state
   const [selectedSale, setSelectedSale] = useState<SaleWithOpportunities | null>(null);
@@ -170,7 +180,10 @@ export default function SMS() {
                       sales={salesWithOpportunities}
                       selectedSaleId={selectedSale?.id || null}
                       onSelectSale={handleSelectSale}
-                      isLoading={isLoadingSales || isLoadingOpportunities}
+                      isLoading={isLoadingSales}
+                      hasNextPage={hasNextPage}
+                      isFetchingNextPage={isFetchingNextPage}
+                      onLoadMore={() => fetchNextPage()}
                     />
                   </CardContent>
                 </Card>

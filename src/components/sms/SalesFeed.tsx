@@ -1,6 +1,7 @@
+import { useEffect, useRef, useCallback } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Home } from 'lucide-react';
+import { Home, Loader2 } from 'lucide-react';
 import SaleCard from './SaleCard';
 import { SaleWithOpportunities } from '@/hooks/useOpportunities';
 
@@ -9,6 +10,9 @@ interface SalesFeedProps {
   selectedSaleId: string | null;
   onSelectSale: (sale: SaleWithOpportunities) => void;
   isLoading: boolean;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  onLoadMore?: () => void;
 }
 
 export default function SalesFeed({
@@ -16,7 +20,40 @@ export default function SalesFeed({
   selectedSaleId,
   onSelectSale,
   isLoading,
+  hasNextPage = false,
+  isFetchingNextPage = false,
+  onLoadMore,
 }: SalesFeedProps) {
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  // Set up intersection observer for infinite scroll
+  const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
+    const [entry] = entries;
+    if (entry.isIntersecting && hasNextPage && !isFetchingNextPage && onLoadMore) {
+      onLoadMore();
+    }
+  }, [hasNextPage, isFetchingNextPage, onLoadMore]);
+
+  useEffect(() => {
+    const element = loadMoreRef.current;
+    if (!element) return;
+
+    observerRef.current = new IntersectionObserver(handleObserver, {
+      root: null,
+      rootMargin: '100px',
+      threshold: 0.1,
+    });
+
+    observerRef.current.observe(element);
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [handleObserver]);
+
   if (isLoading) {
     return (
       <div className="space-y-2 p-1">
@@ -61,6 +98,19 @@ export default function SalesFeed({
             onSelect={() => onSelectSale(sale)}
           />
         ))}
+        
+        {/* Infinite scroll trigger */}
+        <div ref={loadMoreRef} className="py-2">
+          {isFetchingNextPage && (
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading more...
+            </div>
+          )}
+          {hasNextPage && !isFetchingNextPage && (
+            <div className="h-4" /> 
+          )}
+        </div>
       </div>
     </ScrollArea>
   );

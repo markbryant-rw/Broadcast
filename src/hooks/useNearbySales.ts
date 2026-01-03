@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -21,6 +21,8 @@ export interface NearbySale {
   days_to_sell: number | null;
   valuation: number | null;
 }
+
+const PAGE_SIZE = 20;
 
 export function useNearbySales(suburb?: string) {
   const { user } = useAuth();
@@ -51,6 +53,37 @@ export function useNearbySales(suburb?: string) {
     isLoading: salesQuery.isLoading,
     error: salesQuery.error,
   };
+}
+
+// Paginated version for infinite scroll
+export function useNearbySalesPaginated(suburb?: string) {
+  const { user } = useAuth();
+
+  return useInfiniteQuery({
+    queryKey: ['nearby-sales-paginated', suburb],
+    queryFn: async ({ pageParam = 0 }) => {
+      let query = supabase
+        .from('nearby_sales')
+        .select('*')
+        .order('sale_date', { ascending: false })
+        .range(pageParam * PAGE_SIZE, (pageParam + 1) * PAGE_SIZE - 1);
+
+      if (suburb) {
+        query = query.ilike('suburb', `%${suburb}%`);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      return {
+        sales: data as NearbySale[],
+        nextPage: data?.length === PAGE_SIZE ? pageParam + 1 : undefined,
+      };
+    },
+    getNextPageParam: (lastPage) => lastPage.nextPage,
+    initialPageParam: 0,
+    enabled: !!user,
+  });
 }
 
 // Find contacts that have nearby sales based on street matching

@@ -120,43 +120,48 @@ export function useOpportunitiesForSale(sale: NearbySale | null) {
   });
 }
 
-// Get all sales with their opportunity counts
-export function useSalesWithOpportunities(sales: NearbySale[]) {
+// Get contact counts per suburb (cached separately)
+export function useSuburbContactCounts() {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['sales-opportunities', sales.map(s => s.id).join(','), user?.id],
+    queryKey: ['suburb-contact-counts', user?.id],
     queryFn: async () => {
-      if (sales.length === 0) return [];
-
-      // Get all unique suburbs from sales
-      const suburbs = [...new Set(sales.map(s => s.suburb.toLowerCase()))];
-
-      // Get contacts in those suburbs
       const { data: contacts, error } = await supabase
         .from('contacts')
-        .select('id, address_suburb, last_sms_at')
+        .select('address_suburb')
         .not('address_suburb', 'is', null);
 
       if (error) throw error;
 
-      // Count opportunities per sale (contacts in same suburb)
-      const salesWithOpportunities: SaleWithOpportunities[] = sales.map(sale => {
-        const suburbContacts = contacts?.filter(
-          c => c.address_suburb?.toLowerCase() === sale.suburb.toLowerCase()
-        ) || [];
-
-        return {
-          ...sale,
-          opportunities: [], // Will be loaded on selection
-          opportunityCount: suburbContacts.length,
-        };
+      // Count contacts per suburb
+      const counts: Record<string, number> = {};
+      contacts?.forEach(c => {
+        const suburb = c.address_suburb?.toLowerCase() || '';
+        counts[suburb] = (counts[suburb] || 0) + 1;
       });
 
-      return salesWithOpportunities;
+      return counts;
     },
-    enabled: sales.length > 0 && !!user,
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
+}
+
+// Combine sales with opportunity counts using cached suburb counts
+export function useSalesWithOpportunities(sales: NearbySale[]) {
+  const { data: suburbCounts = {} } = useSuburbContactCounts();
+
+  const salesWithOpportunities: SaleWithOpportunities[] = sales.map(sale => ({
+    ...sale,
+    opportunities: [],
+    opportunityCount: suburbCounts[sale.suburb.toLowerCase()] || 0,
+  }));
+
+  return {
+    data: salesWithOpportunities,
+    isLoading: false,
+  };
 }
 
 // Get unique suburbs from sales
