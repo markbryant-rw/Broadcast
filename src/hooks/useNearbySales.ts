@@ -15,6 +15,11 @@ export interface NearbySale {
   reinz_id: string | null;
   synced_at: string | null;
   created_at: string;
+  bedrooms: number | null;
+  floor_area: number | null;
+  land_area: number | null;
+  days_to_sell: number | null;
+  valuation: number | null;
 }
 
 export function useNearbySales(suburb?: string) {

@@ -35,6 +35,7 @@ type SMSLogInsert = {
   trigger_type?: string;
   trigger_property_address?: string;
   related_property_id?: string;
+  related_sale_id?: string;
 };
 
 export function useSMSLogs(contactId?: string) {
