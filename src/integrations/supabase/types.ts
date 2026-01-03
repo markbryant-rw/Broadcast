@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          created_at: string
+          criteria_type: string
+          criteria_value: number
+          description: string
+          icon: string
+          id: string
+          key: string
+          name: string
+          rarity: string
+        }
+        Insert: {
+          created_at?: string
+          criteria_type: string
+          criteria_value: number
+          description: string
+          icon: string
+          id?: string
+          key: string
+          name: string
+          rarity?: string
+        }
+        Update: {
+          created_at?: string
+          criteria_type?: string
+          criteria_value?: number
+          description?: string
+          icon?: string
+          id?: string
+          key?: string
+          name?: string
+          rarity?: string
+        }
+        Relationships: []
+      }
       agentbuddy_connections: {
         Row: {
           access_token: string
@@ -791,6 +827,35 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          id: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          id?: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          id?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
             referencedColumns: ["id"]
           },
         ]
