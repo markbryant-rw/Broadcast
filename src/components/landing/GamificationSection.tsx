@@ -1,4 +1,5 @@
 import { Trophy, Flame, TrendingUp, Star } from 'lucide-react';
+import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 
 const badges = [
   { icon: '🚀', name: 'First Steps', unlocked: true },
@@ -16,10 +17,18 @@ const leaderboard = [
 ];
 
 export function GamificationSection() {
+  const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation({ threshold: 0.2 });
+  const { ref: achievementsRef, isVisible: achievementsVisible } = useScrollAnimation({ threshold: 0.2 });
+  const { ref: streakRef, isVisible: streakVisible } = useScrollAnimation({ threshold: 0.2 });
+  const { ref: leaderboardRef, isVisible: leaderboardVisible } = useScrollAnimation({ threshold: 0.2 });
+
   return (
     <section className="py-20 lg:py-28 bg-card/50 border-y border-border">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
+        <div 
+          ref={headerRef}
+          className={`text-center mb-16 transition-all duration-700 ${headerVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+        >
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-warning/10 border border-warning/20 mb-6">
             <Trophy className="h-4 w-4 text-warning" />
             <span className="text-sm font-medium text-warning">Gamification</span>
@@ -34,7 +43,10 @@ export function GamificationSection() {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {/* Achievements */}
-          <div className="bg-card rounded-2xl border border-border p-6 hover-lift">
+          <div 
+            ref={achievementsRef}
+            className={`bg-card rounded-2xl border border-border p-6 hover-lift transition-all duration-700 delay-100 ${achievementsVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-95'}`}
+          >
             <div className="flex items-center gap-3 mb-6">
               <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <Star className="h-5 w-5 text-primary" />
@@ -49,11 +61,12 @@ export function GamificationSection() {
               {badges.map((badge, i) => (
                 <div
                   key={i}
-                  className={`aspect-square rounded-xl flex items-center justify-center text-2xl transition-all duration-300 ${
+                  className={`aspect-square rounded-xl flex items-center justify-center text-2xl transition-all duration-500 ${
                     badge.unlocked
                       ? 'bg-primary/10 border border-primary/20 hover:scale-110'
                       : 'bg-muted/50 grayscale opacity-50'
                   }`}
+                  style={{ transitionDelay: achievementsVisible ? `${i * 100}ms` : '0ms' }}
                 >
                   {badge.icon}
                 </div>
@@ -66,7 +79,10 @@ export function GamificationSection() {
           </div>
 
           {/* Streak */}
-          <div className="bg-card rounded-2xl border border-border p-6 hover-lift">
+          <div 
+            ref={streakRef}
+            className={`bg-card rounded-2xl border border-border p-6 hover-lift transition-all duration-700 delay-200 ${streakVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-95'}`}
+          >
             <div className="flex items-center gap-3 mb-6">
               <div className="h-10 w-10 rounded-xl bg-destructive/10 flex items-center justify-center">
                 <Flame className="h-5 w-5 text-destructive" />
@@ -86,14 +102,18 @@ export function GamificationSection() {
               {[1, 2, 3, 4, 5, 6, 7].map((day) => (
                 <div
                   key={day}
-                  className="h-2 w-8 rounded-full bg-gradient-to-r from-primary to-accent"
+                  className={`h-2 w-8 rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-500 ${streakVisible ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`}
+                  style={{ transitionDelay: streakVisible ? `${day * 100}ms` : '0ms' }}
                 />
               ))}
             </div>
           </div>
 
           {/* Leaderboard */}
-          <div className="bg-card rounded-2xl border border-border p-6 hover-lift md:col-span-2 lg:col-span-1">
+          <div 
+            ref={leaderboardRef}
+            className={`bg-card rounded-2xl border border-border p-6 hover-lift md:col-span-2 lg:col-span-1 transition-all duration-700 delay-300 ${leaderboardVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-95'}`}
+          >
             <div className="flex items-center gap-3 mb-6">
               <div className="h-10 w-10 rounded-xl bg-success/10 flex items-center justify-center">
                 <TrendingUp className="h-5 w-5 text-success" />
@@ -105,12 +125,13 @@ export function GamificationSection() {
             </div>
             
             <div className="space-y-3">
-              {leaderboard.map((user) => (
+              {leaderboard.map((user, index) => (
                 <div
                   key={user.rank}
-                  className={`flex items-center gap-3 p-3 rounded-xl ${
+                  className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-500 ${
                     user.rank === 1 ? 'bg-warning/10 border border-warning/20' : 'bg-muted/30'
-                  }`}
+                  } ${leaderboardVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}
+                  style={{ transitionDelay: leaderboardVisible ? `${index * 150}ms` : '0ms' }}
                 >
                   <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
                     user.rank === 1 ? 'bg-warning text-warning-foreground' :
