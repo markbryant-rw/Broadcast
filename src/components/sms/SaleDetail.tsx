@@ -153,6 +153,7 @@ export default function SaleDetail({
         </div>
         
         <OpportunitiesList
+          saleId={sale.id}
           opportunities={opportunities}
           isLoading={isLoadingOpportunities}
           onSendSMS={onSendSMS}

@@ -1,26 +1,21 @@
 import { useState, useMemo } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import SMSLayout from '@/components/layout/SMSLayout';
 import SmartFilters from '@/components/sms/SmartFilters';
+import SuburbSelector from '@/components/sms/SuburbSelector';
 import SalesFeed from '@/components/sms/SalesFeed';
 import SaleDetail from '@/components/sms/SaleDetail';
 import QuickSMSComposer from '@/components/sms/QuickSMSComposer';
 import BulkSMSComposer from '@/components/sms/BulkSMSComposer';
-import SMSTemplateManager from '@/components/sms/SMSTemplateManager';
-import SMSLogTable from '@/components/sms/SMSLogTable';
-import SalesUploader from '@/components/sales/SalesUploader';
-import SalesDataTable from '@/components/sales/SalesDataTable';
-import { usePlatformAdmin } from '@/hooks/usePlatformAdmin';
 import { useNearbySalesPaginated, NearbySale } from '@/hooks/useNearbySales';
 import { useSmartFilters } from '@/hooks/useSmartFilters';
-import { useSalesWithOpportunities, useOpportunitiesForSale, useSuburbsList, Opportunity, SaleWithOpportunities } from '@/hooks/useOpportunities';
+import { useFavoriteSuburbs } from '@/hooks/useSuburbFavorites';
+import { useSalesWithOpportunities, useOpportunitiesForSale, Opportunity, SaleWithOpportunities } from '@/hooks/useOpportunities';
 import { useSaleProgressMap } from '@/hooks/useSaleProgress';
-import { MessageSquare, Sparkles, History, FileText, Database, TrendingUp } from 'lucide-react';
+import { MessageSquare, TrendingUp } from 'lucide-react';
 
 export default function SMS() {
-  const { isPlatformAdmin } = usePlatformAdmin();
   const { 
     data: salesPages, 
     isLoading: isLoadingSales,
@@ -28,16 +23,35 @@ export default function SMS() {
     isFetchingNextPage,
     fetchNextPage,
   } = useNearbySalesPaginated();
-  const { data: suburbs = [] } = useSuburbsList();
-  const { filters, updateFilter, setPreset, filterSales } = useSmartFilters();
+  const { data: favorites = [] } = useFavoriteSuburbs();
+  const { filters, updateFilter, filterSales } = useSmartFilters();
+  
+  // Track selected suburb (for filtering within favorites)
+  const [selectedSuburb, setSelectedSuburb] = useState<string | null>(null);
   
   // Flatten paginated sales
   const rawSales = useMemo(() => {
     return salesPages?.pages.flatMap(page => page.sales) || [];
   }, [salesPages]);
   
-  // Filter sales
-  const filteredSales = filterSales(rawSales);
+  // Filter to favorite suburbs first
+  const favoriteSuburbs = useMemo(() => new Set(favorites.map(f => f.suburb.toLowerCase())), [favorites]);
+  
+  const salesInFavoriteSuburbs = useMemo(() => {
+    if (favoriteSuburbs.size === 0) return [];
+    return rawSales.filter(sale => favoriteSuburbs.has(sale.suburb.toLowerCase()));
+  }, [rawSales, favoriteSuburbs]);
+  
+  // Apply selected suburb filter
+  const salesInSelectedSuburb = useMemo(() => {
+    if (!selectedSuburb) return salesInFavoriteSuburbs;
+    return salesInFavoriteSuburbs.filter(sale => 
+      sale.suburb.toLowerCase() === selectedSuburb.toLowerCase()
+    );
+  }, [salesInFavoriteSuburbs, selectedSuburb]);
+  
+  // Apply other filters (date, etc.)
+  const filteredSales = filterSales(salesInSelectedSuburb);
   
   // Get sales with opportunity counts
   const { data: salesWithOpportunities = [] } = useSalesWithOpportunities(filteredSales);
@@ -53,7 +67,6 @@ export default function SMS() {
       const progress = progressMap[sale.id];
       const actioned = (progress?.contacted || 0) + (progress?.ignored || 0);
       const remaining = sale.opportunityCount - actioned;
-      // Hide if all opportunities are completed (and there were some to begin with)
       return sale.opportunityCount === 0 || remaining > 0;
     });
   }, [salesWithOpportunities, progressMap, filters.hideCompleted]);
@@ -78,7 +91,6 @@ export default function SMS() {
 
   const handleSelectSale = (sale: SaleWithOpportunities) => {
     setSelectedSale(sale);
-    // On mobile, open the detail sheet
     if (window.innerWidth < 1024) {
       setDetailSheetOpen(true);
     }
@@ -108,23 +120,26 @@ export default function SMS() {
   const totalOpportunities = displaySales.reduce((sum, s) => sum + s.opportunityCount, 0);
   const hotSales = displaySales.filter(s => s.opportunityCount > 0).length;
 
+  // Check if user has no favorites yet
+  const hasNoFavorites = favorites.length === 0;
+
   return (
     <SMSLayout>
       <div className="space-y-6">
-        <Tabs defaultValue="opportunities" className="space-y-6">
-          {/* Header with Stats */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-display font-bold flex items-center gap-3">
-                <MessageSquare className="h-8 w-8 text-primary" />
-                SMS Prospecting
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                Find opportunities from recent sales and reach out instantly
-              </p>
-            </div>
+        {/* Header with Stats */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-display font-bold flex items-center gap-3">
+              <MessageSquare className="h-8 w-8 text-primary" />
+              SMS Prospecting
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Find opportunities from recent sales and reach out instantly
+            </p>
+          </div>
 
-            {/* Quick Stats */}
+          {/* Quick Stats */}
+          {!hasNoFavorites && (
             <div className="flex gap-4">
               <div className="text-center px-4 py-2 rounded-lg bg-primary/10">
                 <div className="text-2xl font-bold text-primary">{displaySales.length}</div>
@@ -135,46 +150,34 @@ export default function SMS() {
                 <div className="text-xs text-muted-foreground">Opportunities</div>
               </div>
             </div>
-          </div>
+          )}
+        </div>
 
-          {/* Tab Navigation */}
-          <TabsList className="w-full justify-start bg-muted/50 p-1">
-            <TabsTrigger value="opportunities" className="gap-2">
-              <Sparkles className="h-4 w-4" />
-              Opportunities
-            </TabsTrigger>
-            <TabsTrigger value="templates" className="gap-2">
-              <FileText className="h-4 w-4" />
-              Templates
-            </TabsTrigger>
-            <TabsTrigger value="history" className="gap-2">
-              <History className="h-4 w-4" />
-              History
-            </TabsTrigger>
-            {isPlatformAdmin && (
-              <TabsTrigger value="sales" className="gap-2">
-                <Database className="h-4 w-4" />
-                Sales Data
-              </TabsTrigger>
-            )}
-          </TabsList>
+        {/* Suburb Selector */}
+        <Card className="border-primary/20">
+          <CardContent className="pt-4">
+            <SuburbSelector 
+              selectedSuburb={selectedSuburb}
+              onSelectSuburb={setSelectedSuburb}
+            />
+          </CardContent>
+        </Card>
 
-          {/* Opportunities Tab - Main Feature */}
-          <TabsContent value="opportunities" className="space-y-6 mt-0">
-            {/* Smart Filters */}
-            <Card className="border-primary/20">
-              <CardContent className="pt-4">
+        {/* Show content only if user has favorites */}
+        {!hasNoFavorites && (
+          <>
+            {/* Smart Filters - Simplified */}
+            <Card className="border-muted">
+              <CardContent className="py-3">
                 <SmartFilters
                   filters={filters}
                   onUpdateFilter={updateFilter}
-                  onSetPreset={setPreset}
-                  suburbs={suburbs}
                   salesCount={displaySales.length}
                 />
               </CardContent>
             </Card>
 
-            {/* Main Content - Three Panel Layout */}
+            {/* Main Content - Two Panel Layout */}
             <div className="grid lg:grid-cols-5 gap-6">
               {/* Sales Feed - Left Panel */}
               <div className="lg:col-span-2">
@@ -235,36 +238,8 @@ export default function SMS() {
                 </Card>
               </div>
             </div>
-          </TabsContent>
-
-          {/* Templates Tab */}
-          <TabsContent value="templates">
-            <SMSTemplateManager />
-          </TabsContent>
-
-          {/* History Tab */}
-          <TabsContent value="history">
-            <Card>
-              <CardHeader>
-                <CardTitle>SMS History</CardTitle>
-                <CardDescription>
-                  View all SMS messages sent through the platform
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <SMSLogTable />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Sales Data Tab - Platform Admin Only */}
-          {isPlatformAdmin && (
-            <TabsContent value="sales" className="space-y-6">
-              <SalesUploader />
-              <SalesDataTable />
-            </TabsContent>
-          )}
-        </Tabs>
+          </>
+        )}
       </div>
 
       {/* Mobile Detail Sheet */}

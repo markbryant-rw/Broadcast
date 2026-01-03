@@ -1,10 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { NearbySale } from './useNearbySales';
 
-export type FilterPreset = 'recent' | 'smart-match' | 'high-value' | 'by-suburb';
 export type DateRange = '7d' | '30d' | '90d' | 'all' | 'custom';
 export type PriceRange = 'any' | 'under500k' | '500k-1m' | 'over1m';
 export type CooldownPeriod = 3 | 7 | 14 | 30;
+
+// Keep FilterPreset for backward compatibility but it's no longer used
+export type FilterPreset = 'recent' | 'smart-match' | 'high-value' | 'by-suburb';
 
 export interface SmartFilters {
   preset: FilterPreset;
@@ -46,40 +48,6 @@ export function useSmartFilters() {
 
   const resetFilters = () => setFilters(defaultFilters);
 
-  const setPreset = (preset: FilterPreset) => {
-    switch (preset) {
-      case 'recent':
-        setFilters({
-          ...defaultFilters,
-          preset: 'recent',
-          dateRange: '30d',
-        });
-        break;
-      case 'smart-match':
-        setFilters({
-          ...defaultFilters,
-          preset: 'smart-match',
-          dateRange: '30d',
-          excludeRecentlyContacted: false, // We show all but highlight not contacted
-        });
-        break;
-      case 'high-value':
-        setFilters({
-          ...defaultFilters,
-          preset: 'high-value',
-          priceRange: 'over1m',
-          dateRange: '30d',
-        });
-        break;
-      case 'by-suburb':
-        setFilters({
-          ...defaultFilters,
-          preset: 'by-suburb',
-        });
-        break;
-    }
-  };
-
   const getDateFilter = (): { start: Date | null; end: Date | null } => {
     const now = new Date();
     switch (filters.dateRange) {
@@ -97,23 +65,8 @@ export function useSmartFilters() {
     }
   };
 
-  const getPriceFilter = (): { min: number | null; max: number | null } => {
-    switch (filters.priceRange) {
-      case 'under500k':
-        return { min: null, max: 500000 };
-      case '500k-1m':
-        return { min: 500000, max: 1000000 };
-      case 'over1m':
-        return { min: 1000000, max: null };
-      case 'any':
-      default:
-        return { min: null, max: null };
-    }
-  };
-
   const filterSales = (sales: NearbySale[]): NearbySale[] => {
     const dateFilter = getDateFilter();
-    const priceFilter = getPriceFilter();
 
     return sales.filter(sale => {
       // Date filter
@@ -126,28 +79,6 @@ export function useSmartFilters() {
         if (saleDate > dateFilter.end) return false;
       }
 
-      // Price filter
-      if (priceFilter.min && (sale.sale_price ?? 0) < priceFilter.min) return false;
-      if (priceFilter.max && (sale.sale_price ?? 0) > priceFilter.max) return false;
-
-      // Suburb filter
-      if (filters.suburb && sale.suburb.toLowerCase() !== filters.suburb.toLowerCase()) {
-        return false;
-      }
-
-      // Bedrooms filter
-      if (filters.minBedrooms && (sale.bedrooms ?? 0) < filters.minBedrooms) {
-        return false;
-      }
-
-      // Search query
-      if (filters.searchQuery) {
-        const query = filters.searchQuery.toLowerCase();
-        const matchAddress = sale.address.toLowerCase().includes(query);
-        const matchSuburb = sale.suburb.toLowerCase().includes(query);
-        if (!matchAddress && !matchSuburb) return false;
-      }
-
       return true;
     });
   };
@@ -156,9 +87,7 @@ export function useSmartFilters() {
     filters,
     updateFilter,
     resetFilters,
-    setPreset,
     filterSales,
     getDateFilter,
-    getPriceFilter,
   };
 }
