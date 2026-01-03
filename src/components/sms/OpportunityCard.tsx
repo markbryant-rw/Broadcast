@@ -1,12 +1,14 @@
-import { MessageSquare, MapPin, Clock, Sparkles, Star, Timer } from 'lucide-react';
+import { MessageSquare, MapPin, Clock, Sparkles, Star, Timer, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Opportunity } from '@/hooks/useOpportunities';
+import { useRecordContactAction } from '@/hooks/useSaleContactActions';
 import { cn } from '@/lib/utils';
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
+  saleId: string;
   onSendSMS: () => void;
   hideButton?: boolean;
 }
@@ -28,7 +30,6 @@ function getContactStatus(opportunity: Opportunity): {
   variant: 'default' | 'secondary' | 'destructive' | 'outline';
   className?: string;
 } {
-  // Show cooldown status if on cooldown
   if (opportunity.isOnCooldown && opportunity.cooldownDaysRemaining !== null) {
     return {
       label: `${opportunity.cooldownDaysRemaining}d cooldown`,
@@ -59,11 +60,31 @@ function getContactStatus(opportunity: Opportunity): {
   return { label: '', variant: 'outline' };
 }
 
-export default function OpportunityCard({ opportunity, onSendSMS, hideButton = false }: OpportunityCardProps) {
+export default function OpportunityCard({ opportunity, saleId, onSendSMS, hideButton = false }: OpportunityCardProps) {
   const { contact, isOnCooldown } = opportunity;
   const status = getContactStatus(opportunity);
   const hasPhone = !!contact.phone;
   const isDisabled = !hasPhone || isOnCooldown;
+  
+  const recordAction = useRecordContactAction();
+
+  const handleMarkContacted = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    recordAction.mutate({
+      saleId,
+      contactId: contact.id,
+      action: 'contacted',
+    });
+  };
+
+  const handleIgnore = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    recordAction.mutate({
+      saleId,
+      contactId: contact.id,
+      action: 'ignored',
+    });
+  };
 
   return (
     <div 
@@ -138,41 +159,68 @@ export default function OpportunityCard({ opportunity, onSendSMS, hideButton = f
         </div>
       </div>
 
-      {/* Send Button - conditionally hidden in select mode or disabled on cooldown */}
+      {/* Action Buttons */}
       {!hideButton && (
-        <Button
-          size="sm"
-          className={cn(
-            "shrink-0 gap-1.5",
-            isOnCooldown 
-              ? "bg-muted text-muted-foreground hover:bg-muted cursor-not-allowed" 
-              : "bg-success hover:bg-success/90 text-success-foreground"
-          )}
-          onClick={e => {
-            e.stopPropagation();
-            if (!isDisabled) onSendSMS();
-          }}
-          disabled={isDisabled}
-          title={
-            isOnCooldown 
-              ? `On cooldown for ${opportunity.cooldownDaysRemaining} more days`
-              : hasPhone 
-                ? 'Send SMS' 
-                : 'No phone number'
-          }
-        >
-          {isOnCooldown ? (
-            <>
-              <Timer className="h-4 w-4" />
-              <span className="hidden sm:inline">{opportunity.cooldownDaysRemaining}d</span>
-            </>
-          ) : (
-            <>
-              <MessageSquare className="h-4 w-4" />
-              <span className="hidden sm:inline">Send SMS</span>
-            </>
-          )}
-        </Button>
+        <div className="flex items-center gap-1 shrink-0">
+          {/* Ignore Button */}
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            onClick={handleIgnore}
+            disabled={recordAction.isPending}
+            title="Ignore this contact for this sale"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+
+          {/* Mark Contacted Button */}
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 text-muted-foreground hover:text-success hover:bg-success/10"
+            onClick={handleMarkContacted}
+            disabled={recordAction.isPending}
+            title="Mark as contacted (without sending SMS)"
+          >
+            <Check className="h-4 w-4" />
+          </Button>
+
+          {/* Send SMS Button */}
+          <Button
+            size="sm"
+            className={cn(
+              "gap-1.5",
+              isOnCooldown 
+                ? "bg-muted text-muted-foreground hover:bg-muted cursor-not-allowed" 
+                : "bg-success hover:bg-success/90 text-success-foreground"
+            )}
+            onClick={e => {
+              e.stopPropagation();
+              if (!isDisabled) onSendSMS();
+            }}
+            disabled={isDisabled}
+            title={
+              isOnCooldown 
+                ? `On cooldown for ${opportunity.cooldownDaysRemaining} more days`
+                : hasPhone 
+                  ? 'Send SMS' 
+                  : 'No phone number'
+            }
+          >
+            {isOnCooldown ? (
+              <>
+                <Timer className="h-4 w-4" />
+                <span className="hidden sm:inline">{opportunity.cooldownDaysRemaining}d</span>
+              </>
+            ) : (
+              <>
+                <MessageSquare className="h-4 w-4" />
+                <span className="hidden sm:inline">SMS</span>
+              </>
+            )}
+          </Button>
+        </div>
       )}
     </div>
   );

@@ -11,7 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useOrganizations } from '@/hooks/useOrganizations';
 import { DomainManager } from '@/components/organizations/DomainManager';
 import { OrganizationSettings } from '@/components/organizations/OrganizationSettings';
-import { User, Mail, Shield, Bell, Loader2, Building2 } from 'lucide-react';
+import SMSTemplateManager from '@/components/sms/SMSTemplateManager';
+import { User, Mail, Shield, Bell, Loader2, Building2, MessageSquare } from 'lucide-react';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -52,6 +53,10 @@ export default function Settings() {
             <TabsTrigger value="organization" className="gap-2">
               <Building2 className="h-4 w-4" />
               Organization
+            </TabsTrigger>
+            <TabsTrigger value="sms-templates" className="gap-2">
+              <MessageSquare className="h-4 w-4" />
+              SMS Templates
             </TabsTrigger>
             <TabsTrigger value="email" className="gap-2">
               <Mail className="h-4 w-4" />
@@ -129,6 +134,10 @@ export default function Settings() {
           <TabsContent value="organization" className="mt-6 space-y-6">
             <DomainManager organizationId={currentOrganization?.id} />
             <OrganizationSettings organizationId={currentOrganization?.id} />
+          </TabsContent>
+
+          <TabsContent value="sms-templates" className="mt-6">
+            <SMSTemplateManager />
           </TabsContent>
 
           <TabsContent value="email" className="mt-6 space-y-6">

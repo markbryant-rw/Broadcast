@@ -9,6 +9,7 @@ import OpportunityCard from './OpportunityCard';
 import { Opportunity } from '@/hooks/useOpportunities';
 
 interface OpportunitiesListProps {
+  saleId: string;
   opportunities: Opportunity[];
   isLoading: boolean;
   onSendSMS: (opportunity: Opportunity) => void;
@@ -16,6 +17,7 @@ interface OpportunitiesListProps {
 }
 
 export default function OpportunitiesList({
+  saleId,
   opportunities,
   isLoading,
   onSendSMS,
@@ -124,6 +126,7 @@ export default function OpportunitiesList({
           <div className="flex-1">
             <OpportunityCard
               opportunity={opp}
+              saleId={saleId}
               onSendSMS={() => onSendSMS(opp)}
               hideButton={isSelectMode}
             />
@@ -136,6 +139,7 @@ export default function OpportunitiesList({
       <OpportunityCard
         key={opp.contact.id}
         opportunity={opp}
+        saleId={saleId}
         onSendSMS={() => onSendSMS(opp)}
       />
     );
@@ -249,6 +253,7 @@ export default function OpportunitiesList({
                   <OpportunityCard
                     key={opp.contact.id}
                     opportunity={opp}
+                    saleId={saleId}
                     onSendSMS={() => {}} // No-op for cooldown contacts
                   />
                 ))}

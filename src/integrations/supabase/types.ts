@@ -923,6 +923,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_suburb_favorites: {
+        Row: {
+          city: string | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          suburb: string
+          user_id: string
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          suburb: string
+          user_id: string
+        }
+        Update: {
+          city?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          suburb?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       verified_domains: {
         Row: {
           created_at: string
