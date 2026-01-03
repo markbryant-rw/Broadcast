@@ -1,5 +1,5 @@
 import { formatDistanceToNow, format } from 'date-fns';
-import { Home, Bed, Ruler, Calendar, Clock, MapPin, X } from 'lucide-react';
+import { Home, Bed, Ruler, Calendar, Clock, MapPin, X, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -7,6 +7,7 @@ import OpportunitiesList from './OpportunitiesList';
 import SaleMap from './SaleMap';
 import { NearbySale } from '@/hooks/useNearbySales';
 import { Opportunity } from '@/hooks/useOpportunities';
+import { useMarkSaleComplete } from '@/hooks/useSaleContactActions';
 
 interface SaleDetailProps {
   sale: NearbySale;
@@ -15,6 +16,10 @@ interface SaleDetailProps {
   onClose: () => void;
   onSendSMS: (opportunity: Opportunity) => void;
   onBulkSMS?: (opportunities: Opportunity[]) => void;
+}
+
+function cleanAddress(address: string): string {
+  return address.replace(/"/g, '');
 }
 
 function formatPrice(price: number | null): string {
@@ -39,23 +44,44 @@ export default function SaleDetail({
   onSendSMS,
   onBulkSMS,
 }: SaleDetailProps) {
+  const markComplete = useMarkSaleComplete();
   const saleDate = sale.sale_date ? new Date(sale.sale_date) : null;
   const hotOpportunities = opportunities.filter(o => o.neverContacted && o.sameStreet).length;
+  const displayAddress = cleanAddress(sale.address);
+
+  const handleMarkComplete = () => {
+    markComplete.mutate({ saleId: sale.id, suburb: sale.suburb });
+  };
 
   return (
     <div className="space-y-4">
       {/* Header with Close */}
       <div className="flex items-start justify-between">
         <div className="space-y-1">
-          <h2 className="text-lg font-display font-bold">{sale.address}</h2>
+          <h2 className="text-lg font-display font-bold">{displayAddress}</h2>
           <p className="text-sm text-muted-foreground flex items-center gap-1">
             <MapPin className="h-3 w-3" />
             {sale.suburb}, {sale.city}
           </p>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose} className="lg:hidden">
-          <X className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Mark as Complete button */}
+          {opportunities.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleMarkComplete}
+              disabled={markComplete.isPending}
+              className="gap-1.5 text-success border-success/50 hover:bg-success/10 hover:text-success"
+            >
+              <CheckCircle className="h-4 w-4" />
+              Mark Complete
+            </Button>
+          )}
+          <Button variant="ghost" size="icon" onClick={onClose} className="lg:hidden">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Price Banner */}
