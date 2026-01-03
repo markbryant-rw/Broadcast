@@ -1,6 +1,7 @@
 import HomeLayout from '@/components/layout/HomeLayout';
 import DashboardHero from '@/components/dashboard/DashboardHero';
 import ActivityWidget from '@/components/dashboard/ActivityWidget';
+import WhatsNewWidget from '@/components/dashboard/WhatsNewWidget';
 import PlatformStatsWidget from '@/components/admin/PlatformStatsWidget';
 
 export default function Dashboard() {
@@ -10,9 +11,10 @@ export default function Dashboard() {
         {/* Hero Section - SMS vs Email choice */}
         <DashboardHero />
 
-        {/* Personal Activity Widget */}
-        <div className="max-w-4xl mx-auto">
+        {/* Personal Activity & Tips */}
+        <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-6">
           <ActivityWidget />
+          <WhatsNewWidget />
         </div>
 
         {/* Admin Widget (only visible to platform admins) */}
