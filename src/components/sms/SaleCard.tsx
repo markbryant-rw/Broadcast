@@ -1,10 +1,11 @@
 import { formatDistanceToNow } from 'date-fns';
-import { Bed, Calendar, TrendingUp, CheckCircle, MessageSquare, Users, Check } from 'lucide-react';
+import { Bed, Calendar, TrendingUp, CheckCircle, MessageSquare, Users, Check, RotateCcw } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SaleWithOpportunities } from '@/hooks/useOpportunities';
 import { useMarkSaleComplete } from '@/hooks/useSaleContactActions';
+import { useUndoSaleComplete } from '@/hooks/useSaleCompletions';
 import { cn } from '@/lib/utils';
 
 interface SaleProgress {
@@ -18,6 +19,7 @@ interface SaleCardProps {
   isSelected: boolean;
   onSelect: () => void;
   progress?: SaleProgress;
+  isComplete?: boolean;
 }
 
 function cleanAddress(address: string): string {
@@ -74,13 +76,16 @@ function getProgressBarColor(progressPercent: number): string {
   return 'bg-primary';
 }
 
-export default function SaleCard({ sale, isSelected, onSelect, progress }: SaleCardProps) {
+export default function SaleCard({ sale, isSelected, onSelect, progress, isComplete: isSaleComplete }: SaleCardProps) {
   const markComplete = useMarkSaleComplete();
+  const undoComplete = useUndoSaleComplete();
   
   const totalOpportunities = sale.opportunityCount;
   const actioned = (progress?.contacted || 0) + (progress?.ignored || 0);
   const remaining = Math.max(0, totalOpportunities - actioned);
-  const isComplete = totalOpportunities > 0 && remaining === 0;
+  
+  // Sale is complete if explicitly marked OR all opportunities are actioned
+  const isComplete = isSaleComplete || (totalOpportunities > 0 && remaining === 0);
   const progressPercent = totalOpportunities > 0 
     ? Math.round((actioned / totalOpportunities) * 100) 
     : 0;
@@ -96,11 +101,16 @@ export default function SaleCard({ sale, isSelected, onSelect, progress }: SaleC
     });
   };
 
-  // Completed state - single line
+  const handleUndoComplete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    undoComplete.mutate(sale.id);
+  };
+
+  // Completed state - single line with undo option
   if (isComplete) {
     return (
       <Card
-        className={`cursor-pointer transition-all duration-200 border-dashed bg-muted/20 hover:bg-muted/40 border-l-4 border-l-success ${
+        className={`group cursor-pointer transition-all duration-200 border-dashed bg-muted/20 hover:bg-muted/40 border-l-4 border-l-success ${
           isSelected ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'
         }`}
         onClick={onSelect}
@@ -115,6 +125,17 @@ export default function SaleCard({ sale, isSelected, onSelect, progress }: SaleC
           <Badge variant="outline" className="text-success border-success/50 text-[10px] px-1.5 py-0 h-5">
             Complete
           </Badge>
+          {/* Undo button on hover */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/20 hover:text-destructive"
+            onClick={handleUndoComplete}
+            disabled={undoComplete.isPending}
+            title="Undo complete"
+          >
+            <RotateCcw className="h-3 w-3" />
+          </Button>
         </div>
       </Card>
     );
@@ -147,19 +168,17 @@ export default function SaleCard({ sale, isSelected, onSelect, progress }: SaleC
             {isHighValue && (
               <TrendingUp className="h-3.5 w-3.5 text-primary" />
             )}
-            {/* Mark as Complete button - visible on hover */}
-            {totalOpportunities > 0 && remaining > 0 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-success/20 hover:text-success"
-                onClick={handleMarkComplete}
-                disabled={markComplete.isPending}
-                title="Mark all as done"
-              >
-                <Check className="h-3.5 w-3.5" />
-              </Button>
-            )}
+            {/* Mark as Complete button - visible on hover for all sales */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-success/20 hover:text-success"
+              onClick={handleMarkComplete}
+              disabled={markComplete.isPending}
+              title="Mark as done"
+            >
+              <Check className="h-3.5 w-3.5" />
+            </Button>
           </div>
         </div>
 

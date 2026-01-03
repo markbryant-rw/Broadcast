@@ -18,6 +18,7 @@ import { useFavoriteSuburbs } from '@/hooks/useSuburbFavorites';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import { useSalesWithOpportunities, useOpportunitiesForSale, Opportunity, SaleWithOpportunities } from '@/hooks/useOpportunities';
 import { useSaleProgressMap } from '@/hooks/useSaleProgress';
+import { useSaleCompletionMap } from '@/hooks/useSaleCompletions';
 import { MessageSquare, TrendingUp, BarChart3, ChevronDown } from 'lucide-react';
 
 // Combined Suburb Selector + Analytics Toggle component
@@ -123,16 +124,25 @@ export default function SMS() {
   const saleIds = salesWithOpportunities.map(s => s.id);
   const { data: progressMap = {} } = useSaleProgressMap(saleIds);
   
+  // Get sale completion status
+  const completionMap = useSaleCompletionMap();
+  
   // Apply hide completed filter
   const displaySales = useMemo(() => {
     if (!filters.hideCompleted) return salesWithOpportunities;
     return salesWithOpportunities.filter(sale => {
+      // If sale is explicitly marked complete, hide it
+      if (completionMap.has(sale.id)) return false;
+      
+      // If all opportunities are actioned, hide it
       const progress = progressMap[sale.id];
       const actioned = (progress?.contacted || 0) + (progress?.ignored || 0);
       const remaining = sale.opportunityCount - actioned;
+      
+      // Show if: has no opportunities (nothing to do) OR has remaining opportunities
       return sale.opportunityCount === 0 || remaining > 0;
     });
-  }, [salesWithOpportunities, progressMap, filters.hideCompleted]);
+  }, [salesWithOpportunities, progressMap, completionMap, filters.hideCompleted]);
   
   // Selected sale state
   const [selectedSale, setSelectedSale] = useState<SaleWithOpportunities | null>(null);
