@@ -27,6 +27,13 @@ interface UserAchievement {
   achievement?: Achievement;
 }
 
+export interface AchievementProgress {
+  current: number;
+  target: number;
+  percentage: number;
+  label: string;
+}
+
 export function useAchievements() {
   const queryClient = useQueryClient();
   const { logs } = useSMSLogs();
@@ -162,6 +169,58 @@ export function useAchievements() {
     return streak;
   };
 
+  // Get progress for an achievement
+  const getAchievementProgress = (achievement: Achievement): AchievementProgress => {
+    const streak = calculateStreak();
+    let current = 0;
+    let label = '';
+
+    switch (achievement.criteria_type) {
+      case 'sms_count':
+        current = logs?.length || 0;
+        label = `${current}/${achievement.criteria_value} SMS`;
+        break;
+      case 'contacts_count':
+        current = contacts?.length || 0;
+        label = `${current}/${achievement.criteria_value} contacts`;
+        break;
+      case 'campaign_count':
+        current = campaignStats?.count || 0;
+        label = `${current}/${achievement.criteria_value} campaigns`;
+        break;
+      case 'email_open_rate':
+        current = Math.round(campaignStats?.avgOpenRate || 0);
+        label = `${current}%/${achievement.criteria_value}% open rate`;
+        break;
+      case 'streak_days':
+        current = streak;
+        label = `${current}/${achievement.criteria_value} day streak`;
+        break;
+      case 'time_based':
+        // Time-based achievements are binary
+        if (logs && logs.length > 0) {
+          const hours = logs.map(log => new Date(log.sent_at).getHours());
+          if (achievement.key === 'early_bird') {
+            current = hours.some(h => h < 8) ? 1 : 0;
+            label = current ? 'Unlocked!' : 'Send before 8am';
+          } else if (achievement.key === 'night_owl') {
+            current = hours.some(h => h >= 22) ? 1 : 0;
+            label = current ? 'Unlocked!' : 'Send after 10pm';
+          }
+        } else {
+          label = achievement.key === 'early_bird' ? 'Send before 8am' : 'Send after 10pm';
+        }
+        break;
+      default:
+        label = 'Progress unknown';
+    }
+
+    const target = achievement.criteria_type === 'time_based' ? 1 : achievement.criteria_value;
+    const percentage = Math.min(100, (current / target) * 100);
+
+    return { current, target, percentage, label };
+  };
+
   // Check and award achievements
   useEffect(() => {
     if (checkedRef.current || achievementsLoading || userAchievementsLoading) return;
@@ -218,5 +277,6 @@ export function useAchievements() {
     unlockedAchievementIds,
     isLoading: achievementsLoading || userAchievementsLoading,
     streak: calculateStreak(),
+    getAchievementProgress,
   };
 }
