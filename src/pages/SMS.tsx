@@ -7,6 +7,7 @@ import SMSComposer from '@/components/sms/SMSComposer';
 import SMSTemplateManager from '@/components/sms/SMSTemplateManager';
 import SMSLogTable from '@/components/sms/SMSLogTable';
 import NearbySalesWidget from '@/components/sms/NearbySalesWidget';
+import SalesUploader from '@/components/sales/SalesUploader';
 
 interface Contact {
   id: string;
@@ -37,6 +38,7 @@ export default function SMS() {
             <TabsTrigger value="compose">Compose</TabsTrigger>
             <TabsTrigger value="templates">Templates</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
+            <TabsTrigger value="sales">Sales Data</TabsTrigger>
           </TabsList>
 
           {/* Compose Tab */}
@@ -97,6 +99,11 @@ export default function SMS() {
                 <SMSLogTable />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Sales Data Tab */}
+          <TabsContent value="sales" className="space-y-6">
+            <SalesUploader />
           </TabsContent>
         </Tabs>
       </div>

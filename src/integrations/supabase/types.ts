@@ -475,45 +475,63 @@ export type Database = {
       nearby_sales: {
         Row: {
           address: string
+          bedrooms: number | null
           city: string
           created_at: string
+          days_to_sell: number | null
+          floor_area: number | null
           id: string
+          land_area: number | null
           property_type: string | null
           reinz_id: string | null
           sale_date: string | null
           sale_price: number | null
+          source_file: string | null
           street_name: string | null
           street_number: string | null
           suburb: string
           synced_at: string | null
+          valuation: number | null
         }
         Insert: {
           address: string
+          bedrooms?: number | null
           city: string
           created_at?: string
+          days_to_sell?: number | null
+          floor_area?: number | null
           id?: string
+          land_area?: number | null
           property_type?: string | null
           reinz_id?: string | null
           sale_date?: string | null
           sale_price?: number | null
+          source_file?: string | null
           street_name?: string | null
           street_number?: string | null
           suburb: string
           synced_at?: string | null
+          valuation?: number | null
         }
         Update: {
           address?: string
+          bedrooms?: number | null
           city?: string
           created_at?: string
+          days_to_sell?: number | null
+          floor_area?: number | null
           id?: string
+          land_area?: number | null
           property_type?: string | null
           reinz_id?: string | null
           sale_date?: string | null
           sale_price?: number | null
+          source_file?: string | null
           street_name?: string | null
           street_number?: string | null
           suburb?: string
           synced_at?: string | null
+          valuation?: number | null
         }
         Relationships: []
       }
