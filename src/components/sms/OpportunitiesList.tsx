@@ -4,7 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Users, Sparkles, Send, CheckSquare, Square, ChevronDown, Timer } from 'lucide-react';
+import { Users, Sparkles, Send, CheckSquare, Square, ChevronDown, Timer, XCircle, Check } from 'lucide-react';
 import OpportunityCard from './OpportunityCard';
 import { Opportunity } from '@/hooks/useOpportunities';
 
@@ -26,10 +26,17 @@ export default function OpportunitiesList({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [isCooldownOpen, setIsCooldownOpen] = useState(false);
+  const [isIgnoredOpen, setIsIgnoredOpen] = useState(false);
+  const [isContactedOpen, setIsContactedOpen] = useState(false);
 
-  // Separate opportunities: available vs on cooldown
-  const availableOpportunities = opportunities.filter(o => !o.isOnCooldown);
-  const cooldownOpportunities = opportunities.filter(o => o.isOnCooldown);
+  // Separate opportunities by action status first
+  const ignoredOpportunities = opportunities.filter(o => o.actionStatus === 'ignored');
+  const contactedOpportunities = opportunities.filter(o => o.actionStatus === 'contacted');
+  const activeOpportunities = opportunities.filter(o => !o.actionStatus);
+
+  // Separate active: available vs on cooldown
+  const availableOpportunities = activeOpportunities.filter(o => !o.isOnCooldown);
+  const cooldownOpportunities = activeOpportunities.filter(o => o.isOnCooldown);
 
   // Separate available into priority groups
   const hotOpportunities = availableOpportunities.filter(
@@ -40,7 +47,7 @@ export default function OpportunitiesList({
   );
   const otherOpportunities = availableOpportunities.filter(o => !o.neverContacted);
 
-  // Filter to only those with phone numbers AND not on cooldown
+  // Filter to only those with phone numbers AND not on cooldown AND not actioned
   const selectableOpportunities = availableOpportunities.filter(o => o.contact.phone);
 
   const toggleSelectMode = () => {
@@ -107,9 +114,9 @@ export default function OpportunitiesList({
 
   const renderOpportunityCard = (opp: Opportunity) => {
     const hasPhone = !!opp.contact.phone;
-    const canSelect = hasPhone && !opp.isOnCooldown;
+    const canSelect = hasPhone && !opp.isOnCooldown && !opp.actionStatus;
     
-    if (isSelectMode && !opp.isOnCooldown) {
+    if (isSelectMode && !opp.isOnCooldown && !opp.actionStatus) {
       return (
         <div
           key={opp.contact.id}
@@ -234,7 +241,34 @@ export default function OpportunitiesList({
             </div>
           )}
 
-          {/* On Cooldown - Collapsible at bottom */}
+          {/* Contacted for this sale - Collapsible */}
+          {contactedOpportunities.length > 0 && (
+            <Collapsible open={isContactedOpen} onOpenChange={setIsContactedOpen}>
+              <CollapsibleTrigger className="flex items-center gap-2 w-full p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                <Check className="h-4 w-4 text-success" />
+                <span className="text-sm font-medium text-success">
+                  Contacted ({contactedOpportunities.length})
+                </span>
+                <ChevronDown 
+                  className={`h-4 w-4 text-muted-foreground ml-auto transition-transform ${
+                    isContactedOpen ? 'rotate-180' : ''
+                  }`} 
+                />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-2 pt-2">
+                {contactedOpportunities.map(opp => (
+                  <OpportunityCard
+                    key={opp.contact.id}
+                    opportunity={opp}
+                    saleId={saleId}
+                    onSendSMS={() => onSendSMS(opp)}
+                  />
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+
+          {/* On Cooldown - Collapsible */}
           {cooldownOpportunities.length > 0 && (
             <Collapsible open={isCooldownOpen} onOpenChange={setIsCooldownOpen}>
               <CollapsibleTrigger className="flex items-center gap-2 w-full p-2 rounded-lg hover:bg-muted/50 transition-colors">
@@ -255,6 +289,33 @@ export default function OpportunitiesList({
                     opportunity={opp}
                     saleId={saleId}
                     onSendSMS={() => {}} // No-op for cooldown contacts
+                  />
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+
+          {/* Ignored - Collapsible at bottom */}
+          {ignoredOpportunities.length > 0 && (
+            <Collapsible open={isIgnoredOpen} onOpenChange={setIsIgnoredOpen}>
+              <CollapsibleTrigger className="flex items-center gap-2 w-full p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                <XCircle className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">
+                  Ignored ({ignoredOpportunities.length})
+                </span>
+                <ChevronDown 
+                  className={`h-4 w-4 text-muted-foreground ml-auto transition-transform ${
+                    isIgnoredOpen ? 'rotate-180' : ''
+                  }`} 
+                />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-2 pt-2">
+                {ignoredOpportunities.map(opp => (
+                  <OpportunityCard
+                    key={opp.contact.id}
+                    opportunity={opp}
+                    saleId={saleId}
+                    onSendSMS={() => {}}
                   />
                 ))}
               </CollapsibleContent>

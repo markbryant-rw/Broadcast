@@ -1,9 +1,9 @@
-import { MessageSquare, MapPin, Clock, Sparkles, Star, Timer, Check, X } from 'lucide-react';
+import { MessageSquare, MapPin, Clock, Sparkles, Star, Timer, Check, X, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Opportunity } from '@/hooks/useOpportunities';
-import { useRecordContactAction } from '@/hooks/useSaleContactActions';
+import { Opportunity, ActionStatus } from '@/hooks/useOpportunities';
+import { useRecordContactAction, useUndoContactAction } from '@/hooks/useSaleContactActions';
 import { cn } from '@/lib/utils';
 
 interface OpportunityCardProps {
@@ -61,12 +61,15 @@ function getContactStatus(opportunity: Opportunity): {
 }
 
 export default function OpportunityCard({ opportunity, saleId, onSendSMS, hideButton = false }: OpportunityCardProps) {
-  const { contact, isOnCooldown } = opportunity;
+  const { contact, isOnCooldown, actionStatus } = opportunity;
   const status = getContactStatus(opportunity);
   const hasPhone = !!contact.phone;
   const isDisabled = !hasPhone || isOnCooldown;
+  const isIgnored = actionStatus === 'ignored';
+  const isContacted = actionStatus === 'contacted';
   
   const recordAction = useRecordContactAction();
+  const undoAction = useUndoContactAction();
 
   const handleMarkContacted = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -85,6 +88,113 @@ export default function OpportunityCard({ opportunity, saleId, onSendSMS, hideBu
       action: 'ignored',
     });
   };
+
+  const handleUndo = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    undoAction.mutate({
+      saleId,
+      contactId: contact.id,
+    });
+  };
+
+  // Ignored state - show greyed out with undo button
+  if (isIgnored) {
+    return (
+      <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30 opacity-60">
+        {/* Avatar */}
+        <Avatar className="h-10 w-10 shrink-0">
+          <AvatarFallback className="bg-muted text-muted-foreground">
+            {getInitials(contact.first_name, contact.last_name)}
+          </AvatarFallback>
+        </Avatar>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0 space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-sm truncate text-muted-foreground line-through">
+              {contact.first_name || 'Unknown'} {contact.last_name || ''}
+            </span>
+            <Badge variant="outline" className="text-xs text-muted-foreground">
+              Ignored
+            </Badge>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground/60">
+            {contact.address && (
+              <span className="flex items-center gap-1 truncate">
+                <MapPin className="h-3 w-3 shrink-0" />
+                <span className="truncate">{contact.address}</span>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Undo Button */}
+        {!hideButton && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="gap-1.5 text-muted-foreground hover:text-foreground"
+            onClick={handleUndo}
+            disabled={undoAction.isPending}
+          >
+            <RotateCcw className="h-4 w-4" />
+            Undo
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  // Contacted state - show with checkmark
+  if (isContacted) {
+    return (
+      <div className="flex items-center gap-3 p-3 rounded-lg border bg-success/5 border-success/20">
+        {/* Avatar */}
+        <Avatar className="h-10 w-10 shrink-0">
+          <AvatarFallback className="bg-success/10 text-success">
+            {getInitials(contact.first_name, contact.last_name)}
+          </AvatarFallback>
+        </Avatar>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0 space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-sm truncate">
+              {contact.first_name || 'Unknown'} {contact.last_name || ''}
+            </span>
+            <Badge className="text-xs bg-success text-success-foreground gap-1">
+              <Check className="h-2.5 w-2.5" />
+              Contacted
+            </Badge>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            {contact.address && (
+              <span className="flex items-center gap-1 truncate">
+                <MapPin className="h-3 w-3 shrink-0" />
+                <span className="truncate">{contact.address}</span>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Undo Button */}
+        {!hideButton && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="gap-1.5 text-muted-foreground hover:text-foreground"
+            onClick={handleUndo}
+            disabled={undoAction.isPending}
+          >
+            <RotateCcw className="h-4 w-4" />
+            Undo
+          </Button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div 
