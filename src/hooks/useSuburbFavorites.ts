@@ -18,6 +18,8 @@ interface SuburbWithCount {
   saleCount: number;
   isFavorite: boolean;
   displayOrder: number;
+  contactedCount: number;
+  totalOpportunities: number;
 }
 
 export function useFavoriteSuburbs() {
@@ -50,20 +52,47 @@ export function useFavoriteSuburbsWithCounts() {
     queryFn: async (): Promise<SuburbWithCount[]> => {
       if (!user || favorites.length === 0) return [];
       
-      // Get sale counts for each favorite suburb
+      // Get sale counts, contact counts, and action counts for each favorite suburb
       const suburbCounts = await Promise.all(
         favorites.map(async (fav) => {
-          const { count } = await supabase
+          // Get sale count
+          const { count: saleCount } = await supabase
             .from('nearby_sales')
             .select('*', { count: 'exact', head: true })
             .eq('suburb', fav.suburb);
           
+          // Get contact count (opportunities) in this suburb
+          const { count: contactCount } = await supabase
+            .from('contacts')
+            .select('*', { count: 'exact', head: true })
+            .ilike('address_suburb', fav.suburb);
+          
+          // Get contacted/ignored actions count for this suburb
+          const { data: salesInSuburb } = await supabase
+            .from('nearby_sales')
+            .select('id')
+            .eq('suburb', fav.suburb);
+          
+          const saleIds = salesInSuburb?.map(s => s.id) || [];
+          
+          let contactedCount = 0;
+          if (saleIds.length > 0) {
+            const { count } = await supabase
+              .from('sale_contact_actions')
+              .select('*', { count: 'exact', head: true })
+              .in('sale_id', saleIds)
+              .eq('user_id', user.id);
+            contactedCount = count || 0;
+          }
+          
           return {
             suburb: fav.suburb,
             city: fav.city,
-            saleCount: count || 0,
+            saleCount: saleCount || 0,
             isFavorite: true,
             displayOrder: fav.display_order,
+            contactedCount,
+            totalOpportunities: contactCount || 0,
           };
         })
       );
@@ -113,6 +142,8 @@ export function useAvailableSuburbs(searchQuery: string = '') {
             saleCount: value.count,
             isFavorite: favoriteSuburbs.has(suburb.toLowerCase()),
             displayOrder: 0,
+            contactedCount: 0,
+            totalOpportunities: 0,
           });
         }
       });
@@ -207,6 +238,31 @@ export function useRemoveFavoriteSuburb() {
         title: 'Error removing suburb',
         variant: 'destructive',
       });
+    },
+  });
+}
+
+export function useReorderFavoriteSuburbs() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (orderedSuburbs: string[]) => {
+      if (!user) throw new Error('Not authenticated');
+
+      // Update display_order for each suburb
+      await Promise.all(
+        orderedSuburbs.map((suburb, index) =>
+          supabase
+            .from('user_suburb_favorites')
+            .update({ display_order: index })
+            .eq('user_id', user.id)
+            .eq('suburb', suburb)
+        )
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['suburb-favorites'] });
     },
   });
 }
