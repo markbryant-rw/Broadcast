@@ -9,6 +9,7 @@ import SalesFeed from '@/components/sms/SalesFeed';
 import SaleDetail from '@/components/sms/SaleDetail';
 import QuickSMSComposer from '@/components/sms/QuickSMSComposer';
 import BulkSMSComposer from '@/components/sms/BulkSMSComposer';
+import ProspectingStatsWidget from '@/components/sms/ProspectingStatsWidget';
 import { useNearbySalesPaginated, NearbySale } from '@/hooks/useNearbySales';
 import { useSmartFilters } from '@/hooks/useSmartFilters';
 import { useFavoriteSuburbs } from '@/hooks/useSuburbFavorites';
@@ -172,6 +173,9 @@ export default function SMS() {
         {/* Show content only if user has favorites */}
         {!hasNoFavorites && (
           <>
+            {/* Stats Widget */}
+            <ProspectingStatsWidget />
+
             {/* Main Content - Two Panel Layout */}
             <div className="grid lg:grid-cols-5 gap-6">
               {/* Sales Feed - Left Panel */}
