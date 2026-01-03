@@ -1,4 +1,4 @@
-import { Search, Sparkles, DollarSign, MapPin, Clock } from 'lucide-react';
+import { Search, Sparkles, DollarSign, MapPin, Clock, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -9,6 +9,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { SmartFilters as SmartFiltersType, FilterPreset, DateRange, PriceRange } from '@/hooks/useSmartFilters';
 
 interface SmartFiltersProps {
@@ -119,6 +121,18 @@ export default function SmartFilters({
             </SelectContent>
           </Select>
         )}
+
+        {/* Hide Completed Toggle */}
+        <div className="flex items-center gap-2">
+          <Switch
+            id="hide-completed"
+            checked={filters.hideCompleted}
+            onCheckedChange={(checked) => onUpdateFilter('hideCompleted', checked)}
+          />
+          <Label htmlFor="hide-completed" className="text-sm text-muted-foreground cursor-pointer whitespace-nowrap">
+            Hide completed
+          </Label>
+        </div>
 
         {/* Results Count Badge */}
         <Badge variant="secondary" className="ml-auto">

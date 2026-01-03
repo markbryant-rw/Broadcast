@@ -15,6 +15,7 @@ export interface SmartFilters {
   customStartDate: Date | null;
   customEndDate: Date | null;
   searchQuery: string;
+  hideCompleted: boolean;
 }
 
 const defaultFilters: SmartFilters = {
@@ -27,6 +28,7 @@ const defaultFilters: SmartFilters = {
   customStartDate: null,
   customEndDate: null,
   searchQuery: '',
+  hideCompleted: false,
 };
 
 export function useSmartFilters() {
