@@ -3,6 +3,7 @@ import DashboardHero from '@/components/dashboard/DashboardHero';
 import QuickStats from '@/components/dashboard/QuickStats';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
 import PlatformStatsWidget from '@/components/admin/PlatformStatsWidget';
+import HotOpportunitiesWidget from '@/components/dashboard/HotOpportunitiesWidget';
 
 export default function Dashboard() {
   return (
@@ -13,6 +14,9 @@ export default function Dashboard() {
 
         {/* Quick Stats */}
         <QuickStats />
+
+        {/* Hot Opportunities - Contacts near recent sales */}
+        <HotOpportunitiesWidget />
 
         {/* Admin Widget (only visible to platform admins) */}
         <PlatformStatsWidget />
