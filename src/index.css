@@ -144,8 +144,29 @@
     background: var(--gradient-dark);
   }
 
+  .gradient-hero {
+    background: linear-gradient(135deg, hsl(252 85% 98%) 0%, hsl(280 80% 97%) 50%, hsl(15 90% 97%) 100%);
+  }
+
+  .dark .gradient-hero {
+    background: linear-gradient(135deg, hsl(222 47% 8%) 0%, hsl(252 40% 12%) 50%, hsl(222 47% 10%) 100%);
+  }
+
+  .gradient-mesh {
+    background: 
+      radial-gradient(at 40% 20%, hsl(252 85% 60% / 0.15) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, hsl(280 80% 55% / 0.1) 0px, transparent 50%),
+      radial-gradient(at 0% 50%, hsl(15 90% 60% / 0.08) 0px, transparent 50%),
+      radial-gradient(at 80% 50%, hsl(252 85% 60% / 0.1) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, hsl(280 80% 55% / 0.1) 0px, transparent 50%);
+  }
+
   .shadow-glow {
     box-shadow: var(--shadow-glow);
+  }
+
+  .shadow-card-hover {
+    box-shadow: 0 20px 40px -15px hsl(252 85% 60% / 0.2);
   }
 
   .text-gradient {
@@ -154,4 +175,20 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+
+  .hover-lift {
+    @apply transition-all duration-300;
+  }
+
+  .hover-lift:hover {
+    @apply -translate-y-1;
+    box-shadow: 0 20px 40px -15px hsl(252 85% 60% / 0.2);
+  }
+
+  .animate-stagger-1 { animation-delay: 0ms; }
+  .animate-stagger-2 { animation-delay: 100ms; }
+  .animate-stagger-3 { animation-delay: 200ms; }
+  .animate-stagger-4 { animation-delay: 300ms; }
+  .animate-stagger-5 { animation-delay: 400ms; }
+  .animate-stagger-6 { animation-delay: 500ms; }
 }
