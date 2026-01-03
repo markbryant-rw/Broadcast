@@ -18,6 +18,8 @@ export interface Opportunity {
     address_suburb: string | null;
     last_sms_at: string | null;
     agentbuddy_customer_id: string | null;
+    latitude: number | null;
+    longitude: number | null;
     metadata?: { bedrooms?: number } | null;
   };
   distance: number | null; // Estimated distance in meters
@@ -166,7 +168,7 @@ export function useOpportunitiesForSale(
       // Get contacts in the same suburb
       const { data: contacts, error } = await supabase
         .from('contacts')
-        .select('id, email, first_name, last_name, phone, address, address_suburb, last_sms_at, agentbuddy_customer_id, metadata')
+        .select('id, email, first_name, last_name, phone, address, address_suburb, last_sms_at, agentbuddy_customer_id, metadata, latitude, longitude')
         .ilike('address_suburb', sale.suburb);
 
       if (error) throw error;
