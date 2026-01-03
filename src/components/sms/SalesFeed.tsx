@@ -66,14 +66,20 @@ export default function SalesFeed({
     return (
       <div className="space-y-2 p-1">
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="p-3 space-y-1.5 rounded-lg border bg-card">
-            <div className="flex justify-between items-center">
-              <Skeleton className="h-4 w-2/3" />
+          <div key={i} className="p-3 space-y-2 rounded-lg border border-l-4 border-l-muted bg-card">
+            <div className="flex justify-between items-start gap-3">
+              <Skeleton className="h-4 w-3/5" />
               <Skeleton className="h-4 w-20" />
             </div>
             <div className="flex justify-between items-center">
-              <Skeleton className="h-3 w-1/2" />
-              <Skeleton className="h-5 w-8" />
+              <div className="flex gap-2">
+                <Skeleton className="h-5 w-10 rounded" />
+                <Skeleton className="h-5 w-12" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-2 w-16 rounded-full" />
+                <Skeleton className="h-4 w-6" />
+              </div>
             </div>
           </div>
         ))}
