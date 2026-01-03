@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import SMSLayout from '@/components/layout/SMSLayout';
 import SuburbSelector from '@/components/sms/SuburbSelector';
 import SalesFeed from '@/components/sms/SalesFeed';
@@ -16,7 +18,61 @@ import { useFavoriteSuburbs } from '@/hooks/useSuburbFavorites';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import { useSalesWithOpportunities, useOpportunitiesForSale, Opportunity, SaleWithOpportunities } from '@/hooks/useOpportunities';
 import { useSaleProgressMap } from '@/hooks/useSaleProgress';
-import { MessageSquare, TrendingUp } from 'lucide-react';
+import { MessageSquare, TrendingUp, BarChart3, ChevronDown } from 'lucide-react';
+
+// Combined Suburb Selector + Analytics Toggle component
+function SuburbSelectorWithAnalytics({
+  selectedSuburb,
+  onSelectSuburb,
+  hasNoFavorites,
+}: {
+  selectedSuburb: string | null;
+  onSelectSuburb: (suburb: string | null) => void;
+  hasNoFavorites: boolean;
+}) {
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
+
+  return (
+    <Card className="border-primary/20">
+      <CardContent className="pt-4 space-y-4">
+        {/* Row: Suburbs (2/3) + Analytics Toggle (1/3) */}
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Suburb Selector - takes 2/3 */}
+          <div className="flex-1 lg:flex-[2]">
+            <SuburbSelector 
+              selectedSuburb={selectedSuburb}
+              onSelectSuburb={onSelectSuburb}
+            />
+          </div>
+          
+          {/* Analytics Toggle - takes 1/3 */}
+          {!hasNoFavorites && (
+            <div className="lg:flex-1 flex items-start">
+              <Button
+                variant={analyticsOpen ? "default" : "outline"}
+                className="w-full lg:w-auto gap-2 h-auto py-3"
+                onClick={() => setAnalyticsOpen(!analyticsOpen)}
+              >
+                <BarChart3 className="h-4 w-4" />
+                <span className="hidden sm:inline">Analytics</span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${analyticsOpen ? 'rotate-180' : ''}`} />
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Collapsible Analytics Panel */}
+        {!hasNoFavorites && (
+          <Collapsible open={analyticsOpen} onOpenChange={setAnalyticsOpen}>
+            <CollapsibleContent className="pt-4 border-t">
+              <ProspectingStatsWidget />
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function SMS() {
   const { 
@@ -160,21 +216,16 @@ export default function SMS() {
           )}
         </div>
 
-        {/* Suburb Selector */}
-        <Card className="border-primary/20">
-          <CardContent className="pt-4">
-            <SuburbSelector 
-              selectedSuburb={selectedSuburb}
-              onSelectSuburb={setSelectedSuburb}
-            />
-          </CardContent>
-        </Card>
+        {/* Suburb Selector + Analytics Toggle */}
+        <SuburbSelectorWithAnalytics
+          selectedSuburb={selectedSuburb}
+          onSelectSuburb={setSelectedSuburb}
+          hasNoFavorites={hasNoFavorites}
+        />
 
         {/* Show content only if user has favorites */}
         {!hasNoFavorites && (
           <>
-            {/* Stats Widget */}
-            <ProspectingStatsWidget />
 
             {/* Main Content - Two Panel Layout */}
             <div className="grid lg:grid-cols-5 gap-6">

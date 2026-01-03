@@ -65,19 +65,17 @@ export default function SaleDetail({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* Mark as Complete button */}
-          {opportunities.length > 0 && (
-            <Button
+          {/* Mark as Complete button - always show */}
+          <Button
               variant="outline"
               size="sm"
               onClick={handleMarkComplete}
               disabled={markComplete.isPending}
               className="gap-1.5 text-success border-success/50 hover:bg-success/10 hover:text-success"
             >
-              <CheckCircle className="h-4 w-4" />
-              Mark Complete
-            </Button>
-          )}
+            <CheckCircle className="h-4 w-4" />
+            Mark Complete
+          </Button>
           <Button variant="ghost" size="icon" onClick={onClose} className="lg:hidden">
             <X className="h-4 w-4" />
           </Button>

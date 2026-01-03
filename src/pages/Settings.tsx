@@ -20,7 +20,7 @@ import { useUserSettings, useUpdateUserSettings } from '@/hooks/useUserSettings'
 import { DomainManager } from '@/components/organizations/DomainManager';
 import { OrganizationSettings } from '@/components/organizations/OrganizationSettings';
 import SMSTemplateManager from '@/components/sms/SMSTemplateManager';
-import { User, Mail, Shield, Bell, Loader2, Building2, MessageSquare, Timer } from 'lucide-react';
+import { User, Mail, Shield, Bell, Loader2, Building2, MessageSquare, Timer, Target, MapPin } from 'lucide-react';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -45,6 +45,18 @@ export default function Settings() {
 
   const handleCooldownChange = (value: string) => {
     updateSettings.mutate({ cooldownDays: parseInt(value) });
+  };
+
+  const handleRadiusChange = (value: string) => {
+    updateSettings.mutate({ searchRadiusMeters: parseInt(value) });
+  };
+
+  const handleContactGoalChange = (value: string) => {
+    updateSettings.mutate({ weeklyContactGoal: parseInt(value) });
+  };
+
+  const handleSmsGoalChange = (value: string) => {
+    updateSettings.mutate({ weeklySmSGoal: parseInt(value) });
   };
 
   return (
@@ -177,6 +189,77 @@ export default function Settings() {
                   </Select>
                   <p className="text-sm text-muted-foreground">
                     Contacts who have been messaged within this period will be hidden from opportunities to avoid over-contacting.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <Label htmlFor="radius" className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Search Radius
+                  </Label>
+                  <Select
+                    value={userSettings?.searchRadiusMeters?.toString() || '500'}
+                    onValueChange={handleRadiusChange}
+                  >
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Select radius" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="250">250m</SelectItem>
+                      <SelectItem value="500">500m (default)</SelectItem>
+                      <SelectItem value="750">750m</SelectItem>
+                      <SelectItem value="1000">1km</SelectItem>
+                      <SelectItem value="2000">2km</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-muted-foreground">
+                    How far from each sale to look for opportunities.
+                  </p>
+                </div>
+
+                <div className="space-y-3 pt-4 border-t">
+                  <Label className="flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    Weekly Goals
+                  </Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="contact-goal" className="text-sm font-normal text-muted-foreground">Contacts Goal</Label>
+                      <Select
+                        value={userSettings?.weeklyContactGoal?.toString() || '50'}
+                        onValueChange={handleContactGoalChange}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select goal" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="25">25 contacts</SelectItem>
+                          <SelectItem value="50">50 contacts (default)</SelectItem>
+                          <SelectItem value="75">75 contacts</SelectItem>
+                          <SelectItem value="100">100 contacts</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="sms-goal" className="text-sm font-normal text-muted-foreground">SMS Goal</Label>
+                      <Select
+                        value={userSettings?.weeklySmSGoal?.toString() || '100'}
+                        onValueChange={handleSmsGoalChange}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select goal" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="50">50 SMS</SelectItem>
+                          <SelectItem value="100">100 SMS (default)</SelectItem>
+                          <SelectItem value="150">150 SMS</SelectItem>
+                          <SelectItem value="200">200 SMS</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Celebrate when you hit these weekly targets! 🎉
                   </p>
                 </div>
               </CardContent>
