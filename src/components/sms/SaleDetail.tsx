@@ -1,12 +1,14 @@
+import { useState } from 'react';
 import { formatDistanceToNow, format } from 'date-fns';
-import { Home, Bed, Ruler, Calendar, Clock, MapPin, X, CheckCircle } from 'lucide-react';
+import { Home, Bed, Ruler, Calendar, Clock, MapPin, X, CheckCircle, Navigation, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import OpportunitiesList from './OpportunitiesList';
 import SaleMap from './SaleMap';
 import { NearbySale } from '@/hooks/useNearbySales';
-import { Opportunity } from '@/hooks/useOpportunities';
+import { Opportunity, SortMode } from '@/hooks/useOpportunities';
 import { useMarkSaleComplete } from '@/hooks/useSaleContactActions';
 
 interface SaleDetailProps {
@@ -16,6 +18,8 @@ interface SaleDetailProps {
   onClose: () => void;
   onSendSMS: (opportunity: Opportunity) => void;
   onBulkSMS?: (opportunities: Opportunity[]) => void;
+  sortMode?: SortMode;
+  onSortModeChange?: (mode: SortMode) => void;
 }
 
 function cleanAddress(address: string): string {
@@ -43,10 +47,15 @@ export default function SaleDetail({
   onClose,
   onSendSMS,
   onBulkSMS,
+  sortMode = 'smartmatch',
+  onSortModeChange,
 }: SaleDetailProps) {
   const markComplete = useMarkSaleComplete();
   const saleDate = sale.sale_date ? new Date(sale.sale_date) : null;
-  const hotOpportunities = opportunities.filter(o => o.neverContacted && o.sameStreet).length;
+  
+  // Filter out ignored for hot count
+  const activeOpportunities = opportunities.filter(o => o.actionStatus !== 'ignored');
+  const hotOpportunities = activeOpportunities.filter(o => o.neverContacted && o.sameStreet).length;
   const displayAddress = cleanAddress(sale.address);
 
   const handleMarkComplete = () => {
@@ -164,16 +173,46 @@ export default function SaleDetail({
 
       {/* Opportunities Section */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="font-semibold flex items-center gap-2">
             Your Opportunities
-            <Badge variant="secondary">{opportunities.length}</Badge>
+            <Badge variant="secondary">{activeOpportunities.length}</Badge>
           </h3>
-          {hotOpportunities > 0 && (
-            <Badge className="bg-success text-success-foreground">
-              {hotOpportunities} hot
-            </Badge>
-          )}
+          
+          <div className="flex items-center gap-2">
+            {hotOpportunities > 0 && (
+              <Badge className="bg-success text-success-foreground">
+                {hotOpportunities} hot
+              </Badge>
+            )}
+            
+            {/* Sort Mode Toggle */}
+            {onSortModeChange && (
+              <ToggleGroup 
+                type="single" 
+                value={sortMode} 
+                onValueChange={(value) => value && onSortModeChange(value as SortMode)}
+                className="border rounded-lg p-0.5"
+              >
+                <ToggleGroupItem 
+                  value="smartmatch" 
+                  aria-label="Sort by SmartMatch"
+                  className="gap-1 text-xs px-2 h-7 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  SmartMatch
+                </ToggleGroupItem>
+                <ToggleGroupItem 
+                  value="proximity" 
+                  aria-label="Sort by Proximity"
+                  className="gap-1 text-xs px-2 h-7 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                >
+                  <Navigation className="h-3 w-3" />
+                  Proximity
+                </ToggleGroupItem>
+              </ToggleGroup>
+            )}
+          </div>
         </div>
         
         <OpportunitiesList

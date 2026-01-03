@@ -4,6 +4,8 @@ import { useAuth } from './useAuth';
 import { NearbySale } from './useNearbySales';
 
 export type RelevanceLevel = 'high' | 'medium' | 'low';
+export type SortMode = 'smartmatch' | 'proximity';
+export type ActionStatus = 'contacted' | 'ignored' | null;
 
 export interface Opportunity {
   contact: {
@@ -27,6 +29,7 @@ export interface Opportunity {
   cooldownDaysRemaining: number | null;
   relevance: RelevanceLevel;
   matchScore: number; // NEW: combined relevance score
+  actionStatus: ActionStatus; // NEW: whether this contact has been actioned for this sale
 }
 
 export interface SaleWithOpportunities extends NearbySale {
@@ -112,11 +115,51 @@ function calculateMatchScore(
   return score;
 }
 
-export function useOpportunitiesForSale(sale: NearbySale | null, cooldownDays: number = 7) {
+// Sort opportunities by given mode
+function sortOpportunities(opportunities: Opportunity[], sortMode: SortMode): Opportunity[] {
+  return [...opportunities].sort((a, b) => {
+    // Always put non-actioned items first
+    if (!a.actionStatus && b.actionStatus) return -1;
+    if (a.actionStatus && !b.actionStatus) return 1;
+    
+    // Not on cooldown first
+    if (!a.isOnCooldown && b.isOnCooldown) return -1;
+    if (a.isOnCooldown && !b.isOnCooldown) return 1;
+
+    if (sortMode === 'proximity') {
+      // Sort by distance (closest first)
+      if (a.distance === null && b.distance !== null) return 1;
+      if (a.distance !== null && b.distance === null) return -1;
+      if (a.distance !== null && b.distance !== null) {
+        return a.distance - b.distance;
+      }
+      // If same distance, use matchScore as tiebreaker
+      return b.matchScore - a.matchScore;
+    }
+
+    // SmartMatch: sort by matchScore (higher = better)
+    if (a.matchScore !== b.matchScore) {
+      return b.matchScore - a.matchScore;
+    }
+
+    // Then by days since contact (longer = higher priority)
+    if (a.daysSinceContact !== null && b.daysSinceContact !== null) {
+      return b.daysSinceContact - a.daysSinceContact;
+    }
+
+    return 0;
+  });
+}
+
+export function useOpportunitiesForSale(
+  sale: NearbySale | null, 
+  cooldownDays: number = 7,
+  sortMode: SortMode = 'smartmatch'
+) {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['opportunities', sale?.id, user?.id, cooldownDays],
+    queryKey: ['opportunities-for-sale', sale?.id, user?.id, cooldownDays, sortMode],
     queryFn: async () => {
       if (!sale) return [];
 
@@ -128,6 +171,20 @@ export function useOpportunitiesForSale(sale: NearbySale | null, cooldownDays: n
 
       if (error) throw error;
       if (!contacts || contacts.length === 0) return [];
+
+      // Fetch existing actions for this sale
+      const { data: actions, error: actionsError } = await supabase
+        .from('sale_contact_actions')
+        .select('contact_id, action')
+        .eq('sale_id', sale.id)
+        .eq('user_id', user!.id);
+
+      if (actionsError) throw actionsError;
+
+      // Create action map
+      const actionMap = new Map<string, ActionStatus>(
+        actions?.map(a => [a.contact_id, a.action as ActionStatus]) || []
+      );
 
       const saleStreetNumber = parseStreetNumber(sale.street_number || sale.address);
       const saleBedrooms = sale.bedrooms;
@@ -159,6 +216,7 @@ export function useOpportunitiesForSale(sale: NearbySale | null, cooldownDays: n
 
         const relevance = getRelevance(sameStreet, distance, sameBedrooms);
         const matchScore = calculateMatchScore(sameStreet, distance, sameBedrooms, neverContacted);
+        const actionStatus = actionMap.get(contact.id) || null;
 
         return {
           contact: {
@@ -174,27 +232,11 @@ export function useOpportunitiesForSale(sale: NearbySale | null, cooldownDays: n
           cooldownDaysRemaining,
           relevance,
           matchScore,
+          actionStatus,
         };
       });
 
-      // Sort by: not on cooldown first, then by match score (higher = better)
-      return opportunities.sort((a, b) => {
-        // Not on cooldown first
-        if (!a.isOnCooldown && b.isOnCooldown) return -1;
-        if (a.isOnCooldown && !b.isOnCooldown) return 1;
-
-        // Then by match score (higher is better)
-        if (a.matchScore !== b.matchScore) {
-          return b.matchScore - a.matchScore;
-        }
-
-        // Then by days since contact (longer = higher priority)
-        if (a.daysSinceContact !== null && b.daysSinceContact !== null) {
-          return b.daysSinceContact - a.daysSinceContact;
-        }
-
-        return 0;
-      });
+      return sortOpportunities(opportunities, sortMode);
     },
     enabled: !!sale && !!user,
   });

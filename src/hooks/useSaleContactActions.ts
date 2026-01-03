@@ -16,6 +16,11 @@ interface MarkSaleCompleteParams {
   suburb: string;
 }
 
+interface UndoContactActionParams {
+  saleId: string;
+  contactId: string;
+}
+
 export function useRecordContactAction() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -50,6 +55,40 @@ export function useRecordContactAction() {
     onError: () => {
       toast({
         title: 'Error recording action',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+// Undo a contact action (for ignored/contacted)
+export function useUndoContactAction() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ saleId, contactId }: UndoContactActionParams) => {
+      if (!user) throw new Error('Not authenticated');
+
+      const { error } = await supabase
+        .from('sale_contact_actions')
+        .delete()
+        .eq('sale_id', saleId)
+        .eq('contact_id', contactId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['opportunities-for-sale'] });
+      queryClient.invalidateQueries({ queryKey: ['sale-progress'] });
+      queryClient.invalidateQueries({ queryKey: ['suburb-favorites-with-counts'] });
+      toast({ title: 'Action undone' });
+    },
+    onError: () => {
+      toast({
+        title: 'Error undoing action',
         variant: 'destructive',
       });
     },

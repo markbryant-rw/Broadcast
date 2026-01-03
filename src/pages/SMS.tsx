@@ -4,6 +4,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import SMSLayout from '@/components/layout/SMSLayout';
 import SuburbSelector from '@/components/sms/SuburbSelector';
@@ -16,10 +17,10 @@ import { useNearbySalesPaginated, NearbySale } from '@/hooks/useNearbySales';
 import { useSmartFilters } from '@/hooks/useSmartFilters';
 import { useFavoriteSuburbs } from '@/hooks/useSuburbFavorites';
 import { useUserSettings } from '@/hooks/useUserSettings';
-import { useSalesWithOpportunities, useOpportunitiesForSale, Opportunity, SaleWithOpportunities } from '@/hooks/useOpportunities';
+import { useSalesWithOpportunities, useOpportunitiesForSale, Opportunity, SaleWithOpportunities, SortMode } from '@/hooks/useOpportunities';
 import { useSaleProgressMap } from '@/hooks/useSaleProgress';
-import { useSaleCompletionMap } from '@/hooks/useSaleCompletions';
-import { MessageSquare, TrendingUp, BarChart3, ChevronDown } from 'lucide-react';
+import { useSaleCompletionMap, useSaleCompletions } from '@/hooks/useSaleCompletions';
+import { MessageSquare, TrendingUp, BarChart3, ChevronDown, CheckCircle, ArrowLeft } from 'lucide-react';
 
 // Combined Suburb Selector + Analytics Toggle component
 function SuburbSelectorWithAnalytics({
@@ -93,6 +94,12 @@ export default function SMS() {
   // Track selected suburb (for filtering within favorites)
   const [selectedSuburb, setSelectedSuburb] = useState<string | null>(null);
   
+  // Show completed mode
+  const [showCompletedOnly, setShowCompletedOnly] = useState(false);
+  
+  // Opportunity sort mode
+  const [sortMode, setSortMode] = useState<SortMode>('smartmatch');
+  
   // Flatten paginated sales
   const rawSales = useMemo(() => {
     return salesPages?.pages.flatMap(page => page.sales) || [];
@@ -126,9 +133,20 @@ export default function SMS() {
   
   // Get sale completion status
   const completionMap = useSaleCompletionMap();
+  const { data: completions = [] } = useSaleCompletions();
   
-  // Apply hide completed filter
+  // Count completed sales
+  const completedSalesCount = useMemo(() => {
+    return salesWithOpportunities.filter(sale => completionMap.has(sale.id)).length;
+  }, [salesWithOpportunities, completionMap]);
+  
+  // Apply hide completed filter OR show only completed
   const displaySales = useMemo(() => {
+    if (showCompletedOnly) {
+      // Show only completed sales
+      return salesWithOpportunities.filter(sale => completionMap.has(sale.id));
+    }
+    
     if (!filters.hideCompleted) return salesWithOpportunities;
     return salesWithOpportunities.filter(sale => {
       // If sale is explicitly marked complete, hide it
@@ -142,14 +160,14 @@ export default function SMS() {
       // Show if: has no opportunities (nothing to do) OR has remaining opportunities
       return sale.opportunityCount === 0 || remaining > 0;
     });
-  }, [salesWithOpportunities, progressMap, completionMap, filters.hideCompleted]);
+  }, [salesWithOpportunities, progressMap, completionMap, filters.hideCompleted, showCompletedOnly]);
   
   // Selected sale state
   const [selectedSale, setSelectedSale] = useState<SaleWithOpportunities | null>(null);
   
-  // Get opportunities for selected sale (with cooldown filter)
+  // Get opportunities for selected sale (with cooldown filter and sort mode)
   const { data: opportunities = [], isLoading: isLoadingOppDetails } = 
-    useOpportunitiesForSale(selectedSale, cooldownDays);
+    useOpportunitiesForSale(selectedSale, cooldownDays, sortMode);
   
   // SMS composer state
   const [smsComposerOpen, setSmsComposerOpen] = useState(false);
@@ -188,6 +206,16 @@ export default function SMS() {
     setBulkSmsOpen(false);
     setBulkOpportunities([]);
   };
+  
+  const handleShowCompleted = () => {
+    setShowCompletedOnly(true);
+    setSelectedSale(null);
+  };
+  
+  const handleBackToActive = () => {
+    setShowCompletedOnly(false);
+    setSelectedSale(null);
+  };
 
   // Calculate stats
   const totalOpportunities = displaySales.reduce((sum, s) => sum + s.opportunityCount, 0);
@@ -207,7 +235,10 @@ export default function SMS() {
               SMS Prospecting
             </h1>
             <p className="text-muted-foreground mt-1">
-              Find opportunities from recent sales and reach out instantly
+              {showCompletedOnly 
+                ? 'Viewing completed sales - click Undo to reopen'
+                : 'Find opportunities from recent sales and reach out instantly'
+              }
             </p>
           </div>
 
@@ -216,12 +247,16 @@ export default function SMS() {
             <div className="flex gap-4">
               <div className="text-center px-4 py-2 rounded-lg bg-primary/10">
                 <div className="text-2xl font-bold text-primary">{displaySales.length}</div>
-                <div className="text-xs text-muted-foreground">Recent Sales</div>
+                <div className="text-xs text-muted-foreground">
+                  {showCompletedOnly ? 'Completed' : 'Recent Sales'}
+                </div>
               </div>
-              <div className="text-center px-4 py-2 rounded-lg bg-success/10">
-                <div className="text-2xl font-bold text-success">{totalOpportunities}</div>
-                <div className="text-xs text-muted-foreground">Opportunities</div>
-              </div>
+              {!showCompletedOnly && (
+                <div className="text-center px-4 py-2 rounded-lg bg-success/10">
+                  <div className="text-2xl font-bold text-success">{totalOpportunities}</div>
+                  <div className="text-xs text-muted-foreground">Opportunities</div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -245,26 +280,63 @@ export default function SMS() {
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg flex items-center justify-between">
                       <span className="flex items-center gap-2">
-                        <TrendingUp className="h-5 w-5 text-primary" />
-                        Recent Sales
+                        {showCompletedOnly ? (
+                          <>
+                            <CheckCircle className="h-5 w-5 text-success" />
+                            Completed Sales
+                          </>
+                        ) : (
+                          <>
+                            <TrendingUp className="h-5 w-5 text-primary" />
+                            Recent Sales
+                          </>
+                        )}
                       </span>
                       <div className="flex items-center gap-3">
-                        {/* Hide completed toggle - moved inline */}
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            id="hide-completed"
-                            checked={filters.hideCompleted}
-                            onCheckedChange={(checked) => updateFilter('hideCompleted', checked)}
-                            className="scale-90"
-                          />
-                          <Label htmlFor="hide-completed" className="text-xs font-normal text-muted-foreground cursor-pointer whitespace-nowrap">
-                            Hide done
-                          </Label>
-                        </div>
-                        {hotSales > 0 && (
-                          <span className="text-sm font-normal text-success">
-                            {hotSales} hot
-                          </span>
+                        {showCompletedOnly ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleBackToActive}
+                            className="gap-1.5"
+                          >
+                            <ArrowLeft className="h-4 w-4" />
+                            Back
+                          </Button>
+                        ) : (
+                          <>
+                            {/* Hide completed toggle */}
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                id="hide-completed"
+                                checked={filters.hideCompleted}
+                                onCheckedChange={(checked) => updateFilter('hideCompleted', checked)}
+                                className="scale-90"
+                              />
+                              <Label htmlFor="hide-completed" className="text-xs font-normal text-muted-foreground cursor-pointer whitespace-nowrap">
+                                Hide done
+                              </Label>
+                            </div>
+                            
+                            {/* Show completed button */}
+                            {completedSalesCount > 0 && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleShowCompleted}
+                                className="gap-1.5 text-muted-foreground"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                                {completedSalesCount}
+                              </Button>
+                            )}
+                            
+                            {hotSales > 0 && (
+                              <span className="text-sm font-normal text-success">
+                                {hotSales} hot
+                              </span>
+                            )}
+                          </>
                         )}
                       </div>
                     </CardTitle>
@@ -275,7 +347,7 @@ export default function SMS() {
                       selectedSaleId={selectedSale?.id || null}
                       onSelectSale={handleSelectSale}
                       isLoading={isLoadingSales}
-                      hasNextPage={hasNextPage}
+                      hasNextPage={hasNextPage && !showCompletedOnly}
                       isFetchingNextPage={isFetchingNextPage}
                       onLoadMore={() => fetchNextPage()}
                       progressMap={progressMap}
@@ -296,6 +368,8 @@ export default function SMS() {
                         onClose={() => setSelectedSale(null)}
                         onSendSMS={handleSendSMS}
                         onBulkSMS={handleBulkSMS}
+                        sortMode={sortMode}
+                        onSortModeChange={setSortMode}
                       />
                     ) : (
                       <div className="flex flex-col items-center justify-center h-[500px] text-center">
@@ -304,7 +378,10 @@ export default function SMS() {
                         </div>
                         <h3 className="text-xl font-semibold mb-2">Select a Sale</h3>
                         <p className="text-muted-foreground max-w-[300px]">
-                          Click on a recent sale from the list to see your opportunities and send personalized SMS messages.
+                          {showCompletedOnly 
+                            ? 'Click on a completed sale to view details and undo if needed.'
+                            : 'Click on a recent sale from the list to see your opportunities and send personalized SMS messages.'
+                          }
                         </p>
                       </div>
                     )}
@@ -327,6 +404,8 @@ export default function SMS() {
               onClose={() => setDetailSheetOpen(false)}
               onSendSMS={handleSendSMS}
               onBulkSMS={handleBulkSMS}
+              sortMode={sortMode}
+              onSortModeChange={setSortMode}
             />
           )}
         </SheetContent>
