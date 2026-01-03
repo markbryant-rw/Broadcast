@@ -205,7 +205,9 @@ export default function BulkSMSComposer({
     onClose();
   };
 
+  // Early return if no sale - but AFTER all hooks
   if (!sale) return null;
+  if (!isOpen) return null;
 
   return (
     <Sheet open={isOpen} onOpenChange={open => !open && handleClose()}>
@@ -239,12 +241,11 @@ export default function BulkSMSComposer({
 
           {!isStarted ? (
             <>
-              {/* Message Template Editor */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-medium">Message Template</label>
                   <Badge variant="secondary">
-                    {processMessage(messageTemplate, queue[0]?.opportunity || opportunities[0]).length}/{MAX_SMS_LENGTH}
+                    {queue[0] ? processMessage(messageTemplate, queue[0].opportunity).length : messageTemplate.length}/{MAX_SMS_LENGTH}
                   </Badge>
                 </div>
                 <Textarea
