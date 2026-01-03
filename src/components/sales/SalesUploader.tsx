@@ -51,6 +51,11 @@ export default function SalesUploader() {
     return val?.replace(/^="|"$/g, '').trim() || '';
   };
 
+  const cleanStreetName = (val: string): string => {
+    // Remove surrounding quotes from REINZ format: "Morihana Close" -> Morihana Close
+    return val?.replace(/^"|"$/g, '').trim() || '';
+  };
+
   const parseDate = (val: string): string | null => {
     if (!val) return null;
     try {
@@ -88,7 +93,7 @@ export default function SalesUploader() {
         
         return {
           street_number: cleanStreetNumber(values[0] || ''),
-          street_name: values[1]?.trim() || '',
+          street_name: cleanStreetName(values[1] || ''),
           sale_price: parseNumber(values[2]),
           sale_date: parseDate(values[3]),
           days_to_sell: parseNumber(values[4]) ? Math.floor(parseNumber(values[4])!) : null,

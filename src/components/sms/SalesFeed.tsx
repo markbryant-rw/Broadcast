@@ -19,19 +19,17 @@ export default function SalesFeed({
 }: SalesFeedProps) {
   if (isLoading) {
     return (
-      <div className="space-y-3 p-1">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="p-4 space-y-3 rounded-lg border bg-card">
-            <div className="flex justify-between">
-              <Skeleton className="h-5 w-3/4" />
-              <Skeleton className="h-5 w-16" />
-            </div>
-            <Skeleton className="h-7 w-32" />
-            <div className="flex gap-3">
+      <div className="space-y-2 p-1">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="p-3 space-y-1.5 rounded-lg border bg-card">
+            <div className="flex justify-between items-center">
+              <Skeleton className="h-4 w-2/3" />
               <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-4 w-16" />
             </div>
-            <Skeleton className="h-5 w-28" />
+            <div className="flex justify-between items-center">
+              <Skeleton className="h-3 w-1/2" />
+              <Skeleton className="h-5 w-8" />
+            </div>
           </div>
         ))}
       </div>
@@ -54,7 +52,7 @@ export default function SalesFeed({
 
   return (
     <ScrollArea className="h-[calc(100vh-280px)]">
-      <div className="space-y-3 p-1">
+      <div className="space-y-2 p-1">
         {sales.map(sale => (
           <SaleCard
             key={sale.id}
