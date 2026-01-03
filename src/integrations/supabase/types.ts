@@ -329,6 +329,7 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
+          last_sms_at: string | null
           metadata: Json | null
           organization_id: string | null
           phone: string | null
@@ -347,6 +348,7 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          last_sms_at?: string | null
           metadata?: Json | null
           organization_id?: string | null
           phone?: string | null
@@ -365,6 +367,7 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          last_sms_at?: string | null
           metadata?: Json | null
           organization_id?: string | null
           phone?: string | null
@@ -630,6 +633,7 @@ export type Database = {
           organization_id: string | null
           phone_number: string
           related_property_id: string | null
+          related_sale_id: string | null
           sent_at: string
           template_id: string | null
           trigger_property_address: string | null
@@ -644,6 +648,7 @@ export type Database = {
           organization_id?: string | null
           phone_number: string
           related_property_id?: string | null
+          related_sale_id?: string | null
           sent_at?: string
           template_id?: string | null
           trigger_property_address?: string | null
@@ -658,6 +663,7 @@ export type Database = {
           organization_id?: string | null
           phone_number?: string
           related_property_id?: string | null
+          related_sale_id?: string | null
           sent_at?: string
           template_id?: string | null
           trigger_property_address?: string | null
@@ -677,6 +683,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_logs_related_sale_id_fkey"
+            columns: ["related_sale_id"]
+            isOneToOne: false
+            referencedRelation: "nearby_sales"
             referencedColumns: ["id"]
           },
           {
