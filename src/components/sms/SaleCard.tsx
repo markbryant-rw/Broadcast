@@ -1,8 +1,11 @@
 import { formatDistanceToNow } from 'date-fns';
-import { Bed, Calendar, TrendingUp, CheckCircle, MessageSquare, Users } from 'lucide-react';
+import { Bed, Calendar, TrendingUp, CheckCircle, MessageSquare, Users, Check } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { SaleWithOpportunities } from '@/hooks/useOpportunities';
+import { useMarkSaleComplete } from '@/hooks/useSaleContactActions';
+import { cn } from '@/lib/utils';
 
 interface SaleProgress {
   contacted: number;
@@ -72,6 +75,8 @@ function getProgressBarColor(progressPercent: number): string {
 }
 
 export default function SaleCard({ sale, isSelected, onSelect, progress }: SaleCardProps) {
+  const markComplete = useMarkSaleComplete();
+  
   const totalOpportunities = sale.opportunityCount;
   const actioned = (progress?.contacted || 0) + (progress?.ignored || 0);
   const remaining = Math.max(0, totalOpportunities - actioned);
@@ -82,6 +87,14 @@ export default function SaleCard({ sale, isSelected, onSelect, progress }: SaleC
 
   const isHighValue = (sale.sale_price ?? 0) >= 1000000;
   const displayAddress = getDisplayAddress(sale.address, sale.suburb);
+
+  const handleMarkComplete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    markComplete.mutate({ 
+      saleId: sale.id, 
+      suburb: sale.suburb 
+    });
+  };
 
   // Completed state - single line
   if (isComplete) {
@@ -110,27 +123,42 @@ export default function SaleCard({ sale, isSelected, onSelect, progress }: SaleC
   // Active state with two-column layout
   return (
     <Card
-      className={`cursor-pointer transition-all duration-200 hover:shadow-lg border-l-4 ${getAccentColor(progressPercent, totalOpportunities > 0)} ${
+      className={cn(
+        "group cursor-pointer transition-all duration-200 hover:shadow-lg border-l-4",
+        getAccentColor(progressPercent, totalOpportunities > 0),
         isSelected
           ? 'ring-2 ring-primary bg-primary/5 border-primary shadow-md'
           : 'hover:border-primary/50 hover:bg-accent/30'
-      }`}
+      )}
       onClick={onSelect}
     >
       <div className="p-3 space-y-2">
-        {/* Row 1: Address + Price */}
-        <div className="flex items-start justify-between gap-3">
+        {/* Row 1: Address + Price + Mark Complete */}
+        <div className="flex items-start justify-between gap-2">
           {/* Left: Address */}
           <h3 className="font-semibold text-sm leading-tight flex-1 min-w-0 line-clamp-2">
             {displayAddress}
           </h3>
-          {/* Right: Price + High value indicator */}
+          {/* Right: Price + High value indicator + Mark Complete */}
           <div className="flex items-center gap-1.5 shrink-0">
             <span className="font-bold text-sm text-foreground">
               {formatPrice(sale.sale_price)}
             </span>
             {isHighValue && (
               <TrendingUp className="h-3.5 w-3.5 text-primary" />
+            )}
+            {/* Mark as Complete button - visible on hover */}
+            {totalOpportunities > 0 && remaining > 0 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-success/20 hover:text-success"
+                onClick={handleMarkComplete}
+                disabled={markComplete.isPending}
+                title="Mark all as done"
+              >
+                <Check className="h-3.5 w-3.5" />
+              </Button>
             )}
           </div>
         </div>

@@ -11,6 +11,11 @@ interface RecordActionParams {
   action: ActionType;
 }
 
+interface MarkSaleCompleteParams {
+  saleId: string;
+  suburb: string;
+}
+
 export function useRecordContactAction() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -35,6 +40,7 @@ export function useRecordContactAction() {
       // Invalidate the opportunities query to refresh the list
       queryClient.invalidateQueries({ queryKey: ['opportunities-for-sale'] });
       queryClient.invalidateQueries({ queryKey: ['sale-progress'] });
+      queryClient.invalidateQueries({ queryKey: ['suburb-favorites-with-counts'] });
       
       const message = variables.action === 'contacted' 
         ? 'Marked as contacted' 
@@ -44,6 +50,69 @@ export function useRecordContactAction() {
     onError: () => {
       toast({
         title: 'Error recording action',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useMarkSaleComplete() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ saleId, suburb }: MarkSaleCompleteParams) => {
+      if (!user) throw new Error('Not authenticated');
+
+      // Get all contacts in this suburb that haven't been actioned for this sale
+      const { data: contacts, error: contactsError } = await supabase
+        .from('contacts')
+        .select('id')
+        .ilike('address_suburb', suburb);
+
+      if (contactsError) throw contactsError;
+      if (!contacts || contacts.length === 0) return;
+
+      // Get existing actions for this sale
+      const { data: existingActions, error: actionsError } = await supabase
+        .from('sale_contact_actions')
+        .select('contact_id')
+        .eq('sale_id', saleId)
+        .eq('user_id', user.id);
+
+      if (actionsError) throw actionsError;
+
+      const actionedContactIds = new Set(existingActions?.map(a => a.contact_id) || []);
+      
+      // Filter to only contacts not yet actioned
+      const contactsToIgnore = contacts.filter(c => !actionedContactIds.has(c.id));
+
+      if (contactsToIgnore.length === 0) return;
+
+      // Bulk insert ignored actions
+      const { error: insertError } = await supabase
+        .from('sale_contact_actions')
+        .insert(
+          contactsToIgnore.map(contact => ({
+            sale_id: saleId,
+            contact_id: contact.id,
+            user_id: user.id,
+            action: 'ignored',
+          }))
+        );
+
+      if (insertError) throw insertError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['opportunities-for-sale'] });
+      queryClient.invalidateQueries({ queryKey: ['sale-progress'] });
+      queryClient.invalidateQueries({ queryKey: ['suburb-favorites-with-counts'] });
+      toast({ title: 'Sale marked as complete' });
+    },
+    onError: () => {
+      toast({
+        title: 'Error marking sale complete',
         variant: 'destructive',
       });
     },
