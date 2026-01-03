@@ -6,18 +6,28 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useOrganizations } from '@/hooks/useOrganizations';
+import { useUserSettings, useUpdateUserSettings } from '@/hooks/useUserSettings';
 import { DomainManager } from '@/components/organizations/DomainManager';
 import { OrganizationSettings } from '@/components/organizations/OrganizationSettings';
 import SMSTemplateManager from '@/components/sms/SMSTemplateManager';
-import { User, Mail, Shield, Bell, Loader2, Building2, MessageSquare } from 'lucide-react';
+import { User, Mail, Shield, Bell, Loader2, Building2, MessageSquare, Timer } from 'lucide-react';
 
 export default function Settings() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { currentOrganization } = useOrganizations();
+  const { data: userSettings } = useUserSettings();
+  const updateSettings = useUpdateUserSettings();
   const [isSaving, setIsSaving] = useState(false);
 
   const userInitials = user?.user_metadata?.first_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U';
@@ -31,6 +41,10 @@ export default function Settings() {
       title: 'Settings saved',
       description: 'Your preferences have been updated.',
     });
+  };
+
+  const handleCooldownChange = (value: string) => {
+    updateSettings.mutate({ cooldownDays: parseInt(value) });
   };
 
   return (
@@ -49,6 +63,10 @@ export default function Settings() {
             <TabsTrigger value="profile" className="gap-2">
               <User className="h-4 w-4" />
               Profile
+            </TabsTrigger>
+            <TabsTrigger value="prospecting" className="gap-2">
+              <Timer className="h-4 w-4" />
+              Prospecting
             </TabsTrigger>
             <TabsTrigger value="organization" className="gap-2">
               <Building2 className="h-4 w-4" />
@@ -127,6 +145,40 @@ export default function Settings() {
                   {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   Save Changes
                 </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="prospecting" className="mt-6 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-display flex items-center gap-2">
+                  <Timer className="h-5 w-5 text-primary" />
+                  Prospecting Settings
+                </CardTitle>
+                <CardDescription>Configure your SMS prospecting preferences</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-3">
+                  <Label htmlFor="cooldown">Contact Cooldown Period</Label>
+                  <Select
+                    value={userSettings?.cooldownDays?.toString() || '7'}
+                    onValueChange={handleCooldownChange}
+                  >
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Select cooldown" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="3">3 days</SelectItem>
+                      <SelectItem value="7">7 days (default)</SelectItem>
+                      <SelectItem value="14">14 days</SelectItem>
+                      <SelectItem value="30">30 days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-muted-foreground">
+                    Contacts who have been messaged within this period will be hidden from opportunities to avoid over-contacting.
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

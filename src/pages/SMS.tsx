@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import SMSLayout from '@/components/layout/SMSLayout';
-import SmartFilters from '@/components/sms/SmartFilters';
 import SuburbSelector from '@/components/sms/SuburbSelector';
 import SalesFeed from '@/components/sms/SalesFeed';
 import SaleDetail from '@/components/sms/SaleDetail';
@@ -11,6 +12,7 @@ import BulkSMSComposer from '@/components/sms/BulkSMSComposer';
 import { useNearbySalesPaginated, NearbySale } from '@/hooks/useNearbySales';
 import { useSmartFilters } from '@/hooks/useSmartFilters';
 import { useFavoriteSuburbs } from '@/hooks/useSuburbFavorites';
+import { useUserSettings } from '@/hooks/useUserSettings';
 import { useSalesWithOpportunities, useOpportunitiesForSale, Opportunity, SaleWithOpportunities } from '@/hooks/useOpportunities';
 import { useSaleProgressMap } from '@/hooks/useSaleProgress';
 import { MessageSquare, TrendingUp } from 'lucide-react';
@@ -25,6 +27,10 @@ export default function SMS() {
   } = useNearbySalesPaginated();
   const { data: favorites = [] } = useFavoriteSuburbs();
   const { filters, updateFilter, filterSales } = useSmartFilters();
+  const { data: userSettings } = useUserSettings();
+  
+  // Use cooldown from user settings
+  const cooldownDays = userSettings?.cooldownDays ?? filters.cooldownDays;
   
   // Track selected suburb (for filtering within favorites)
   const [selectedSuburb, setSelectedSuburb] = useState<string | null>(null);
@@ -76,7 +82,7 @@ export default function SMS() {
   
   // Get opportunities for selected sale (with cooldown filter)
   const { data: opportunities = [], isLoading: isLoadingOppDetails } = 
-    useOpportunitiesForSale(selectedSale, filters.cooldownDays);
+    useOpportunitiesForSale(selectedSale, cooldownDays);
   
   // SMS composer state
   const [smsComposerOpen, setSmsComposerOpen] = useState(false);
@@ -166,17 +172,6 @@ export default function SMS() {
         {/* Show content only if user has favorites */}
         {!hasNoFavorites && (
           <>
-            {/* Smart Filters - Simplified */}
-            <Card className="border-muted">
-              <CardContent className="py-3">
-                <SmartFilters
-                  filters={filters}
-                  onUpdateFilter={updateFilter}
-                  salesCount={displaySales.length}
-                />
-              </CardContent>
-            </Card>
-
             {/* Main Content - Two Panel Layout */}
             <div className="grid lg:grid-cols-5 gap-6">
               {/* Sales Feed - Left Panel */}
@@ -188,11 +183,25 @@ export default function SMS() {
                         <TrendingUp className="h-5 w-5 text-primary" />
                         Recent Sales
                       </span>
-                      {hotSales > 0 && (
-                        <span className="text-sm font-normal text-success">
-                          {hotSales} with opportunities
-                        </span>
-                      )}
+                      <div className="flex items-center gap-3">
+                        {/* Hide completed toggle - moved inline */}
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            id="hide-completed"
+                            checked={filters.hideCompleted}
+                            onCheckedChange={(checked) => updateFilter('hideCompleted', checked)}
+                            className="scale-90"
+                          />
+                          <Label htmlFor="hide-completed" className="text-xs font-normal text-muted-foreground cursor-pointer whitespace-nowrap">
+                            Hide done
+                          </Label>
+                        </div>
+                        {hotSales > 0 && (
+                          <span className="text-sm font-normal text-success">
+                            {hotSales} hot
+                          </span>
+                        )}
+                      </div>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-3">

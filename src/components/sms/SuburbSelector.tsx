@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, X, MapPin, GripVertical } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Plus, X, MapPin, GripVertical, CheckCircle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -10,6 +10,7 @@ import {
   useReorderFavoriteSuburbs 
 } from '@/hooks/useSuburbFavorites';
 import SuburbPicker from './SuburbPicker';
+import confetti from 'canvas-confetti';
 import {
   DndContext,
   closestCenter,
@@ -18,6 +19,8 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -41,75 +44,84 @@ interface SuburbCardProps {
   isSelected: boolean;
   onSelect: () => void;
   onRemove: (e: React.MouseEvent) => void;
+  isDragOverlay?: boolean;
 }
 
-function SortableSuburbCard({ 
+function SuburbCardContent({ 
   suburb, 
   saleCount, 
   contactedCount, 
   totalOpportunities,
   isSelected, 
   onSelect, 
-  onRemove 
-}: SuburbCardProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: suburb });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
+  onRemove,
+  isDragging = false,
+  isDragOverlay = false,
+}: SuburbCardProps & { isDragging?: boolean }) {
   const progressPercent = totalOpportunities > 0 
     ? Math.round((contactedCount / totalOpportunities) * 100) 
     : 0;
+  const isComplete = progressPercent === 100 && totalOpportunities > 0;
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
       className={cn(
         "group relative flex flex-col items-center justify-center px-4 py-3 rounded-lg border-2 transition-all min-w-[120px]",
-        isDragging && "opacity-50 z-50",
-        isSelected
+        isDragging && !isDragOverlay && "opacity-30",
+        isDragOverlay && "shadow-2xl scale-105 rotate-2 ring-2 ring-primary cursor-grabbing",
+        isComplete && "bg-success/10 border-success/50",
+        isSelected && !isComplete
           ? "border-primary bg-primary/10 text-primary"
-          : "border-border bg-card hover:border-primary/50 hover:bg-accent/5"
+          : !isComplete && "border-border bg-card hover:border-primary/50 hover:bg-accent/5"
       )}
     >
       {/* Drag handle */}
-      <div
-        {...attributes}
-        {...listeners}
-        className="absolute top-1 left-1 cursor-grab opacity-0 group-hover:opacity-60 hover:opacity-100 transition-opacity"
-      >
-        <GripVertical className="h-4 w-4 text-muted-foreground" />
-      </div>
+      {!isDragOverlay && (
+        <div className="absolute top-1 left-1 cursor-grab opacity-0 group-hover:opacity-60 hover:opacity-100 transition-opacity">
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </div>
+      )}
 
       {/* Remove button */}
-      <button
-        onClick={onRemove}
-        className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10"
-      >
-        <X className="h-3 w-3" />
-      </button>
+      {!isDragOverlay && (
+        <button
+          onClick={onRemove}
+          className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      )}
+
+      {/* Completion indicator */}
+      {isComplete && (
+        <div className="absolute -top-2 -right-2 z-10">
+          <div className="relative">
+            <CheckCircle className="h-5 w-5 text-success fill-success/20" />
+            <Sparkles className="h-3 w-3 text-warning absolute -top-1 -right-1 animate-pulse" />
+          </div>
+        </div>
+      )}
 
       {/* Clickable content */}
-      <button onClick={onSelect} className="w-full flex flex-col items-center">
-        <span className="text-sm font-medium truncate max-w-[100px]">{suburb}</span>
+      <button onClick={onSelect} className="w-full flex flex-col items-center" disabled={isDragOverlay}>
+        <span className={cn(
+          "text-sm font-medium truncate max-w-[100px]",
+          isComplete && "text-success"
+        )}>{suburb}</span>
         <span className="text-xs text-muted-foreground">{saleCount} sales</span>
         
         {/* Progress bar */}
         {totalOpportunities > 0 && (
           <div className="w-full mt-2 space-y-1">
-            <Progress value={progressPercent} className="h-1.5" />
-            <span className="text-[10px] text-muted-foreground">
-              {contactedCount}/{totalOpportunities} contacted
+            <Progress 
+              value={progressPercent} 
+              className={cn("h-1.5", isComplete && "[&>div]:bg-success")}
+            />
+            <span className={cn(
+              "text-[10px]",
+              isComplete ? "text-success font-medium" : "text-muted-foreground"
+            )}>
+              {isComplete ? "Complete! 🎉" : `${contactedCount}/${totalOpportunities} contacted`}
             </span>
           </div>
         )}
@@ -118,11 +130,42 @@ function SortableSuburbCard({
   );
 }
 
+function SortableSuburbCard(props: SuburbCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: props.suburb });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+    >
+      <SuburbCardContent {...props} isDragging={isDragging} />
+    </div>
+  );
+}
+
 export default function SuburbSelector({ selectedSuburb, onSelectSuburb }: SuburbSelectorProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const { data: favorites = [], isLoading } = useFavoriteSuburbsWithCounts();
   const removeFavorite = useRemoveFavoriteSuburb();
   const reorderFavorites = useReorderFavoriteSuburbs();
+  
+  // Track previous progress to detect completion
+  const prevProgressRef = useRef<Map<string, number>>(new Map());
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -135,7 +178,34 @@ export default function SuburbSelector({ selectedSuburb, onSelectSuburb }: Subur
     })
   );
 
+  // Fire confetti when a suburb reaches 100%
+  useEffect(() => {
+    favorites.forEach(fav => {
+      const progressPercent = fav.totalOpportunities > 0 
+        ? Math.round((fav.contactedCount / fav.totalOpportunities) * 100) 
+        : 0;
+      const prevProgress = prevProgressRef.current.get(fav.suburb) ?? 0;
+      
+      if (progressPercent === 100 && prevProgress < 100 && fav.totalOpportunities > 0) {
+        // Fire confetti!
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#10b981', '#34d399', '#6ee7b7', '#fbbf24', '#f59e0b'],
+        });
+      }
+      
+      prevProgressRef.current.set(fav.suburb, progressPercent);
+    });
+  }, [favorites]);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
+    setActiveId(null);
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
@@ -162,6 +232,10 @@ export default function SuburbSelector({ selectedSuburb, onSelectSuburb }: Subur
   const allProgressPercent = totalOpportunities > 0 
     ? Math.round((totalContacted / totalOpportunities) * 100) 
     : 0;
+  const allComplete = allProgressPercent === 100 && totalOpportunities > 0;
+
+  // Find active favorite for drag overlay
+  const activeFavorite = activeId ? favorites.find(f => f.suburb === activeId) : null;
 
   if (isLoading) {
     return (
@@ -182,21 +256,28 @@ export default function SuburbSelector({ selectedSuburb, onSelectSuburb }: Subur
             onClick={() => onSelectSuburb(null)}
             className={cn(
               "flex flex-col items-center justify-center px-4 py-3 rounded-lg border-2 transition-all min-w-[120px]",
-              selectedSuburb === null
+              allComplete && "bg-success/10 border-success/50",
+              selectedSuburb === null && !allComplete
                 ? "border-primary bg-primary/10 text-primary"
-                : "border-border bg-card hover:border-primary/50 hover:bg-accent/5"
+                : !allComplete && "border-border bg-card hover:border-primary/50 hover:bg-accent/5"
             )}
           >
-            <MapPin className="h-4 w-4 mb-1" />
-            <span className="text-sm font-medium">All</span>
+            <MapPin className={cn("h-4 w-4 mb-1", allComplete && "text-success")} />
+            <span className={cn("text-sm font-medium", allComplete && "text-success")}>All</span>
             <span className="text-xs text-muted-foreground">
               {totalSales} sales
             </span>
             {totalOpportunities > 0 && (
               <div className="w-full mt-2 space-y-1">
-                <Progress value={allProgressPercent} className="h-1.5" />
-                <span className="text-[10px] text-muted-foreground">
-                  {totalContacted}/{totalOpportunities}
+                <Progress 
+                  value={allProgressPercent} 
+                  className={cn("h-1.5", allComplete && "[&>div]:bg-success")}
+                />
+                <span className={cn(
+                  "text-[10px]",
+                  allComplete ? "text-success font-medium" : "text-muted-foreground"
+                )}>
+                  {allComplete ? "All done! 🎉" : `${totalContacted}/${totalOpportunities}`}
                 </span>
               </div>
             )}
@@ -207,6 +288,7 @@ export default function SuburbSelector({ selectedSuburb, onSelectSuburb }: Subur
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
           <SortableContext
@@ -226,6 +308,22 @@ export default function SuburbSelector({ selectedSuburb, onSelectSuburb }: Subur
               />
             ))}
           </SortableContext>
+
+          {/* Drag Overlay - shows a styled copy while dragging */}
+          <DragOverlay>
+            {activeFavorite ? (
+              <SuburbCardContent
+                suburb={activeFavorite.suburb}
+                saleCount={activeFavorite.saleCount}
+                contactedCount={activeFavorite.contactedCount}
+                totalOpportunities={activeFavorite.totalOpportunities}
+                isSelected={false}
+                onSelect={() => {}}
+                onRemove={() => {}}
+                isDragOverlay={true}
+              />
+            ) : null}
+          </DragOverlay>
         </DndContext>
 
         {/* Add suburb button */}
