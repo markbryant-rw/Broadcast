@@ -7,6 +7,7 @@ import { Opportunity } from '@/hooks/useOpportunities';
 interface OpportunityCardProps {
   opportunity: Opportunity;
   onSendSMS: () => void;
+  hideButton?: boolean;
 }
 
 function formatDistance(meters: number | null): string {
@@ -48,7 +49,7 @@ function getContactStatus(opportunity: Opportunity): {
   return { label: '', variant: 'outline' };
 }
 
-export default function OpportunityCard({ opportunity, onSendSMS }: OpportunityCardProps) {
+export default function OpportunityCard({ opportunity, onSendSMS, hideButton = false }: OpportunityCardProps) {
   const { contact } = opportunity;
   const status = getContactStatus(opportunity);
   const hasPhone = !!contact.phone;
@@ -104,20 +105,22 @@ export default function OpportunityCard({ opportunity, onSendSMS }: OpportunityC
         </div>
       </div>
 
-      {/* Send Button */}
-      <Button
-        size="sm"
-        className="shrink-0 gap-1.5 bg-success hover:bg-success/90 text-success-foreground"
-        onClick={e => {
-          e.stopPropagation();
-          onSendSMS();
-        }}
-        disabled={!hasPhone}
-        title={hasPhone ? 'Send SMS' : 'No phone number'}
-      >
-        <MessageSquare className="h-4 w-4" />
-        <span className="hidden sm:inline">Send SMS</span>
-      </Button>
+      {/* Send Button - conditionally hidden in select mode */}
+      {!hideButton && (
+        <Button
+          size="sm"
+          className="shrink-0 gap-1.5 bg-success hover:bg-success/90 text-success-foreground"
+          onClick={e => {
+            e.stopPropagation();
+            onSendSMS();
+          }}
+          disabled={!hasPhone}
+          title={hasPhone ? 'Send SMS' : 'No phone number'}
+        >
+          <MessageSquare className="h-4 w-4" />
+          <span className="hidden sm:inline">Send SMS</span>
+        </Button>
+      )}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import SmartFilters from '@/components/sms/SmartFilters';
 import SalesFeed from '@/components/sms/SalesFeed';
 import SaleDetail from '@/components/sms/SaleDetail';
 import QuickSMSComposer from '@/components/sms/QuickSMSComposer';
+import BulkSMSComposer from '@/components/sms/BulkSMSComposer';
 import SMSTemplateManager from '@/components/sms/SMSTemplateManager';
 import SMSLogTable from '@/components/sms/SMSLogTable';
 import SalesUploader from '@/components/sales/SalesUploader';
@@ -41,6 +42,10 @@ export default function SMS() {
   const [smsComposerOpen, setSmsComposerOpen] = useState(false);
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
   
+  // Bulk SMS state
+  const [bulkSmsOpen, setBulkSmsOpen] = useState(false);
+  const [bulkOpportunities, setBulkOpportunities] = useState<Opportunity[]>([]);
+  
   // Mobile detail sheet state
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
 
@@ -60,6 +65,16 @@ export default function SMS() {
   const handleCloseSmsComposer = () => {
     setSmsComposerOpen(false);
     setSelectedOpportunity(null);
+  };
+
+  const handleBulkSMS = (opportunities: Opportunity[]) => {
+    setBulkOpportunities(opportunities);
+    setBulkSmsOpen(true);
+  };
+
+  const handleCloseBulkSms = () => {
+    setBulkSmsOpen(false);
+    setBulkOpportunities([]);
   };
 
   // Calculate stats
@@ -172,6 +187,7 @@ export default function SMS() {
                         isLoadingOpportunities={isLoadingOppDetails}
                         onClose={() => setSelectedSale(null)}
                         onSendSMS={handleSendSMS}
+                        onBulkSMS={handleBulkSMS}
                       />
                     ) : (
                       <div className="flex flex-col items-center justify-center h-[500px] text-center">
@@ -230,6 +246,7 @@ export default function SMS() {
               isLoadingOpportunities={isLoadingOppDetails}
               onClose={() => setDetailSheetOpen(false)}
               onSendSMS={handleSendSMS}
+              onBulkSMS={handleBulkSMS}
             />
           )}
         </SheetContent>
@@ -241,6 +258,14 @@ export default function SMS() {
         sale={selectedSale}
         isOpen={smsComposerOpen}
         onClose={handleCloseSmsComposer}
+      />
+
+      {/* Bulk SMS Composer */}
+      <BulkSMSComposer
+        opportunities={bulkOpportunities}
+        sale={selectedSale}
+        isOpen={bulkSmsOpen}
+        onClose={handleCloseBulkSms}
       />
     </DashboardLayout>
   );

@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Users, Sparkles, Send, CheckSquare, Square } from 'lucide-react';
 import OpportunityCard from './OpportunityCard';
 import { Opportunity } from '@/hooks/useOpportunities';
 
@@ -8,13 +11,18 @@ interface OpportunitiesListProps {
   opportunities: Opportunity[];
   isLoading: boolean;
   onSendSMS: (opportunity: Opportunity) => void;
+  onBulkSMS?: (opportunities: Opportunity[]) => void;
 }
 
 export default function OpportunitiesList({
   opportunities,
   isLoading,
   onSendSMS,
+  onBulkSMS,
 }: OpportunitiesListProps) {
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isSelectMode, setIsSelectMode] = useState(false);
+
   // Separate into priority groups
   const hotOpportunities = opportunities.filter(
     o => o.neverContacted && o.sameStreet
@@ -23,6 +31,40 @@ export default function OpportunitiesList({
     o => o.neverContacted && !o.sameStreet
   );
   const otherOpportunities = opportunities.filter(o => !o.neverContacted);
+
+  // Filter to only those with phone numbers
+  const selectableOpportunities = opportunities.filter(o => o.contact.phone);
+
+  const toggleSelectMode = () => {
+    if (isSelectMode) {
+      setSelectedIds(new Set());
+    }
+    setIsSelectMode(!isSelectMode);
+  };
+
+  const toggleSelection = (contactId: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(contactId)) {
+      newSelected.delete(contactId);
+    } else {
+      newSelected.add(contactId);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const selectAll = () => {
+    setSelectedIds(new Set(selectableOpportunities.map(o => o.contact.id)));
+  };
+
+  const selectNone = () => {
+    setSelectedIds(new Set());
+  };
+
+  const handleBulkSMS = () => {
+    if (selectedIds.size === 0 || !onBulkSMS) return;
+    const selected = opportunities.filter(o => selectedIds.has(o.contact.id));
+    onBulkSMS(selected);
+  };
 
   if (isLoading) {
     return (
@@ -55,64 +97,133 @@ export default function OpportunitiesList({
     );
   }
 
+  const renderOpportunityCard = (opp: Opportunity) => {
+    const hasPhone = !!opp.contact.phone;
+    
+    if (isSelectMode) {
+      return (
+        <div
+          key={opp.contact.id}
+          className={`flex items-center gap-2 p-1 rounded-lg transition-colors ${
+            selectedIds.has(opp.contact.id) ? 'bg-primary/10' : ''
+          }`}
+        >
+          <Checkbox
+            checked={selectedIds.has(opp.contact.id)}
+            onCheckedChange={() => toggleSelection(opp.contact.id)}
+            disabled={!hasPhone}
+            className="ml-2"
+          />
+          <div className="flex-1">
+            <OpportunityCard
+              opportunity={opp}
+              onSendSMS={() => onSendSMS(opp)}
+              hideButton={isSelectMode}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <OpportunityCard
+        key={opp.contact.id}
+        opportunity={opp}
+        onSendSMS={() => onSendSMS(opp)}
+      />
+    );
+  };
+
   return (
-    <ScrollArea className="h-[calc(100vh-500px)] min-h-[200px]">
-      <div className="space-y-4">
-        {/* Hot Opportunities */}
-        {hotOpportunities.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm font-medium text-success">
-              <Sparkles className="h-4 w-4" />
-              Hot Opportunities ({hotOpportunities.length})
-            </div>
-            <div className="space-y-2">
-              {hotOpportunities.map(opp => (
-                <OpportunityCard
-                  key={opp.contact.id}
-                  opportunity={opp}
-                  onSendSMS={() => onSendSMS(opp)}
-                />
-              ))}
-            </div>
+    <div className="space-y-3">
+      {/* Bulk Actions Bar */}
+      {onBulkSMS && selectableOpportunities.length > 0 && (
+        <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-muted/50 border">
+          <div className="flex items-center gap-2">
+            <Button
+              variant={isSelectMode ? 'default' : 'outline'}
+              size="sm"
+              onClick={toggleSelectMode}
+              className="gap-1.5"
+            >
+              {isSelectMode ? (
+                <>
+                  <CheckSquare className="h-4 w-4" />
+                  Exit Select
+                </>
+              ) : (
+                <>
+                  <Square className="h-4 w-4" />
+                  Select Multiple
+                </>
+              )}
+            </Button>
+            
+            {isSelectMode && (
+              <>
+                <Button variant="ghost" size="sm" onClick={selectAll}>
+                  Select All ({selectableOpportunities.length})
+                </Button>
+                <Button variant="ghost" size="sm" onClick={selectNone}>
+                  Clear
+                </Button>
+              </>
+            )}
           </div>
-        )}
 
-        {/* Never Contacted */}
-        {neverContactedOpportunities.length > 0 && (
-          <div className="space-y-2">
-            <div className="text-sm font-medium text-warning">
-              Never Contacted ({neverContactedOpportunities.length})
-            </div>
-            <div className="space-y-2">
-              {neverContactedOpportunities.map(opp => (
-                <OpportunityCard
-                  key={opp.contact.id}
-                  opportunity={opp}
-                  onSendSMS={() => onSendSMS(opp)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+          {isSelectMode && selectedIds.size > 0 && (
+            <Button
+              size="sm"
+              className="gap-1.5 bg-success hover:bg-success/90 text-success-foreground"
+              onClick={handleBulkSMS}
+            >
+              <Send className="h-4 w-4" />
+              Send to {selectedIds.size}
+            </Button>
+          )}
+        </div>
+      )}
 
-        {/* Previously Contacted */}
-        {otherOpportunities.length > 0 && (
-          <div className="space-y-2">
-            <div className="text-sm font-medium text-muted-foreground">
-              Previously Contacted ({otherOpportunities.length})
-            </div>
+      <ScrollArea className="h-[calc(100vh-550px)] min-h-[200px]">
+        <div className="space-y-4">
+          {/* Hot Opportunities */}
+          {hotOpportunities.length > 0 && (
             <div className="space-y-2">
-              {otherOpportunities.map(opp => (
-                <OpportunityCard
-                  key={opp.contact.id}
-                  opportunity={opp}
-                  onSendSMS={() => onSendSMS(opp)}
-                />
-              ))}
+              <div className="flex items-center gap-2 text-sm font-medium text-success">
+                <Sparkles className="h-4 w-4" />
+                Hot Opportunities ({hotOpportunities.length})
+              </div>
+              <div className="space-y-2">
+                {hotOpportunities.map(renderOpportunityCard)}
+              </div>
             </div>
-          </div>
-        )}
-      </div>
-    </ScrollArea>
+          )}
+
+          {/* Never Contacted */}
+          {neverContactedOpportunities.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-warning">
+                Never Contacted ({neverContactedOpportunities.length})
+              </div>
+              <div className="space-y-2">
+                {neverContactedOpportunities.map(renderOpportunityCard)}
+              </div>
+            </div>
+          )}
+
+          {/* Previously Contacted */}
+          {otherOpportunities.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-muted-foreground">
+                Previously Contacted ({otherOpportunities.length})
+              </div>
+              <div className="space-y-2">
+                {otherOpportunities.map(renderOpportunityCard)}
+              </div>
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+    </div>
   );
 }

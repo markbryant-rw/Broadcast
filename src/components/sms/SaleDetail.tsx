@@ -14,6 +14,7 @@ interface SaleDetailProps {
   isLoadingOpportunities: boolean;
   onClose: () => void;
   onSendSMS: (opportunity: Opportunity) => void;
+  onBulkSMS?: (opportunities: Opportunity[]) => void;
 }
 
 function formatPrice(price: number | null): string {
@@ -36,6 +37,7 @@ export default function SaleDetail({
   isLoadingOpportunities,
   onClose,
   onSendSMS,
+  onBulkSMS,
 }: SaleDetailProps) {
   const saleDate = sale.sale_date ? new Date(sale.sale_date) : null;
   const hotOpportunities = opportunities.filter(o => o.neverContacted && o.sameStreet).length;
@@ -154,6 +156,7 @@ export default function SaleDetail({
           opportunities={opportunities}
           isLoading={isLoadingOpportunities}
           onSendSMS={onSendSMS}
+          onBulkSMS={onBulkSMS}
         />
       </div>
     </div>
