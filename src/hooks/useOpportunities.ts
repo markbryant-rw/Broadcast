@@ -16,14 +16,17 @@ export interface Opportunity {
     address_suburb: string | null;
     last_sms_at: string | null;
     agentbuddy_customer_id: string | null;
+    metadata?: { bedrooms?: number } | null;
   };
   distance: number | null; // Estimated distance in meters
   sameStreet: boolean;
+  sameBedrooms: boolean; // NEW: same bedroom count as sale
   daysSinceContact: number | null;
   neverContacted: boolean;
   isOnCooldown: boolean;
   cooldownDaysRemaining: number | null;
   relevance: RelevanceLevel;
+  matchScore: number; // NEW: combined relevance score
 }
 
 export interface SaleWithOpportunities extends NearbySale {
@@ -56,19 +59,57 @@ function isSameStreet(
   return contactAddress.toLowerCase().includes(saleStreetName.toLowerCase());
 }
 
-// Determine relevance based on proximity
+// Determine relevance based on proximity and bedroom match
 function getRelevance(
   sameStreet: boolean,
-  distance: number | null
+  distance: number | null,
+  sameBedrooms: boolean
 ): RelevanceLevel {
-  if (sameStreet) {
-    // Same street and within 20 houses (~200m)
+  if (sameStreet && sameBedrooms) {
+    // Same street + same bedrooms = best match
     if (distance !== null && distance <= 200) return 'high';
-    // Same street but further away
+    return 'high';
+  }
+  if (sameStreet) {
+    // Same street, different bedrooms
+    if (distance !== null && distance <= 200) return 'high';
     return 'medium';
   }
-  // Different street in suburb
+  if (sameBedrooms) {
+    // Same bedrooms but different street - still good
+    return 'medium';
+  }
+  // Different street and different bedrooms
   return 'low';
+}
+
+// Calculate a match score for sorting (higher = better match)
+function calculateMatchScore(
+  sameStreet: boolean,
+  distance: number | null,
+  sameBedrooms: boolean,
+  neverContacted: boolean
+): number {
+  let score = 0;
+  
+  // Same street is important
+  if (sameStreet) score += 50;
+  
+  // Same bedrooms is important
+  if (sameBedrooms) score += 40;
+  
+  // Closer distance is better (within same street)
+  if (distance !== null) {
+    if (distance <= 50) score += 30;
+    else if (distance <= 100) score += 25;
+    else if (distance <= 200) score += 20;
+    else if (distance <= 500) score += 10;
+  }
+  
+  // Never contacted gets priority
+  if (neverContacted) score += 20;
+  
+  return score;
 }
 
 export function useOpportunitiesForSale(sale: NearbySale | null, cooldownDays: number = 7) {
@@ -82,13 +123,14 @@ export function useOpportunitiesForSale(sale: NearbySale | null, cooldownDays: n
       // Get contacts in the same suburb
       const { data: contacts, error } = await supabase
         .from('contacts')
-        .select('id, email, first_name, last_name, phone, address, address_suburb, last_sms_at, agentbuddy_customer_id')
+        .select('id, email, first_name, last_name, phone, address, address_suburb, last_sms_at, agentbuddy_customer_id, metadata')
         .ilike('address_suburb', sale.suburb);
 
       if (error) throw error;
       if (!contacts || contacts.length === 0) return [];
 
       const saleStreetNumber = parseStreetNumber(sale.street_number || sale.address);
+      const saleBedrooms = sale.bedrooms;
 
       const opportunities: Opportunity[] = contacts.map(contact => {
         const contactStreetNumber = parseStreetNumber(contact.address);
@@ -96,6 +138,11 @@ export function useOpportunitiesForSale(sale: NearbySale | null, cooldownDays: n
         const distance = sameStreet 
           ? estimateDistance(saleStreetNumber, contactStreetNumber)
           : null;
+
+        // Check bedroom match
+        const contactMetadata = contact.metadata as { bedrooms?: number } | null;
+        const contactBedrooms = contactMetadata?.bedrooms;
+        const sameBedrooms = saleBedrooms !== null && contactBedrooms !== undefined && saleBedrooms === contactBedrooms;
 
         const daysSinceContact = contact.last_sms_at
           ? Math.floor(
@@ -110,37 +157,35 @@ export function useOpportunitiesForSale(sale: NearbySale | null, cooldownDays: n
           ? cooldownDays - daysSinceContact
           : null;
 
-        const relevance = getRelevance(sameStreet, distance);
+        const relevance = getRelevance(sameStreet, distance, sameBedrooms);
+        const matchScore = calculateMatchScore(sameStreet, distance, sameBedrooms, neverContacted);
 
         return {
-          contact,
+          contact: {
+            ...contact,
+            metadata: contactMetadata,
+          },
           distance,
           sameStreet,
+          sameBedrooms,
           daysSinceContact,
           neverContacted,
           isOnCooldown,
           cooldownDaysRemaining,
           relevance,
+          matchScore,
         };
       });
 
-      // Sort by: not on cooldown first, then same street, then by distance, then by never contacted
+      // Sort by: not on cooldown first, then by match score (higher = better)
       return opportunities.sort((a, b) => {
         // Not on cooldown first
         if (!a.isOnCooldown && b.isOnCooldown) return -1;
         if (a.isOnCooldown && !b.isOnCooldown) return 1;
 
-        // Same street first
-        if (a.sameStreet && !b.sameStreet) return -1;
-        if (!a.sameStreet && b.sameStreet) return 1;
-
-        // Never contacted first
-        if (a.neverContacted && !b.neverContacted) return -1;
-        if (!a.neverContacted && b.neverContacted) return 1;
-
-        // Then by distance (if available)
-        if (a.distance !== null && b.distance !== null) {
-          return a.distance - b.distance;
+        // Then by match score (higher is better)
+        if (a.matchScore !== b.matchScore) {
+          return b.matchScore - a.matchScore;
         }
 
         // Then by days since contact (longer = higher priority)

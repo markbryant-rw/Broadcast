@@ -5,10 +5,16 @@ import { useToast } from './use-toast';
 
 export interface UserSettings {
   cooldownDays: number;
+  searchRadiusMeters: number;
+  weeklyContactGoal: number;
+  weeklySmSGoal: number;
 }
 
 const defaultSettings: UserSettings = {
   cooldownDays: 7,
+  searchRadiusMeters: 500,
+  weeklyContactGoal: 50,
+  weeklySmSGoal: 100,
 };
 
 export function useUserSettings() {
