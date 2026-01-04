@@ -9,6 +9,9 @@ verify_jwt = false
 [functions.agentbuddy-add-note]
 verify_jwt = true
 
+[functions.agentbuddy-store-connection]
+verify_jwt = false
+
 [functions.send-campaign]
 verify_jwt = true
 

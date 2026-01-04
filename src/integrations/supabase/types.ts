@@ -55,24 +55,38 @@ export type Database = {
           api_key: string
           connected_at: string
           id: string
+          organization_id: string | null
+          scopes: string[] | null
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           api_key: string
           connected_at?: string
           id?: string
+          organization_id?: string | null
+          scopes?: string[] | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           api_key?: string
           connected_at?: string
           id?: string
+          organization_id?: string | null
+          scopes?: string[] | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "agentbuddy_connections_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       campaign_analytics: {
         Row: {
