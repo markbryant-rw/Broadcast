@@ -3,7 +3,9 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Link2, ExternalLink, CheckCircle2, XCircle, RefreshCw, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Link2, ExternalLink, CheckCircle2, XCircle, RefreshCw, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAgentBuddy } from '@/hooks/useAgentBuddy';
 import { format } from 'date-fns';
 
@@ -17,15 +19,17 @@ export default function Integrations() {
     sync 
   } = useAgentBuddy();
 
+  const [apiKey, setApiKey] = useState('');
+  const [showKey, setShowKey] = useState(false);
+
   const integrations = [
     {
       id: 'agentbuddy',
       name: 'AgentBuddy',
-      description: 'Sync your customers and activity data for targeted email campaigns.',
+      description: 'Sync your customers and activity data for targeted SMS campaigns.',
       logo: '🤖',
       connected: isConnected,
       connectedAt: connection?.connected_at,
-      scopes: connection?.scopes,
     },
     {
       id: 'resend',
@@ -38,7 +42,9 @@ export default function Integrations() {
 
   const handleConnect = async (id: string) => {
     if (id === 'agentbuddy') {
-      connect.mutate();
+      connect.mutate(apiKey, {
+        onSuccess: () => setApiKey(''),
+      });
     }
   };
 
@@ -59,7 +65,7 @@ export default function Integrations() {
         <div>
           <h1 className="text-3xl font-display font-bold">Integrations</h1>
           <p className="text-muted-foreground mt-1">
-            Connect your tools for a seamless email marketing workflow
+            Connect your tools for a seamless marketing workflow
           </p>
         </div>
 
@@ -103,15 +109,6 @@ export default function Integrations() {
                         Connected {format(new Date(integration.connectedAt), 'MMM d, yyyy')}
                       </p>
                     )}
-                    {integration.scopes && integration.scopes.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {integration.scopes.map((scope) => (
-                          <Badge key={scope} variant="outline" className="text-xs">
-                            {scope}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
                     <div className="flex gap-2">
                       {integration.id === 'agentbuddy' && (
                         <Button 
@@ -125,7 +122,7 @@ export default function Integrations() {
                           ) : (
                             <RefreshCw className="h-4 w-4 mr-2" />
                           )}
-                          Sync Customers
+                          Sync Contacts
                         </Button>
                       )}
                       <Button 
@@ -142,18 +139,67 @@ export default function Integrations() {
                       </Button>
                     </div>
                   </div>
+                ) : integration.id === 'agentbuddy' ? (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor={`api-key-${integration.id}`}>API Key</Label>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Input
+                            id={`api-key-${integration.id}`}
+                            type={showKey ? 'text' : 'password'}
+                            placeholder="Paste your AgentBuddy API key"
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                            onClick={() => setShowKey(!showKey)}
+                          >
+                            {showKey ? (
+                              <EyeOff className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </Button>
+                        </div>
+                        <Button
+                          className="gradient-primary"
+                          onClick={() => handleConnect(integration.id)}
+                          disabled={!apiKey.trim() || connect.isPending}
+                        >
+                          {connect.isPending ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Link2 className="h-4 w-4 mr-2" />
+                          )}
+                          Connect
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Generate an API key from{' '}
+                        <a
+                          href="https://app.agentbuddy.io/settings/integrations"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline inline-flex items-center gap-1"
+                        >
+                          AgentBuddy Settings
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </p>
+                    </div>
+                  </div>
                 ) : (
                   <Button 
                     className="gradient-primary"
-                    onClick={() => handleConnect(integration.id)}
-                    disabled={connect.isPending || isLoading}
+                    disabled
                   >
-                    {(connect.isPending || isLoading) ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Link2 className="h-4 w-4 mr-2" />
-                    )}
-                    Connect
+                    <Link2 className="h-4 w-4 mr-2" />
+                    Coming Soon
                   </Button>
                 )}
               </CardContent>

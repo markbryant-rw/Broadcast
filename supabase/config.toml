@@ -1,6 +1,6 @@
 project_id = "bessucubulzbrrujkcxg"
 
-[functions.agentbuddy-oauth]
+[functions.agentbuddy-validate]
 verify_jwt = false
 
 [functions.agentbuddy-sync]
