@@ -6,24 +6,36 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const AGENTBUDDY_BASE_URL = "https://mxsefnpxrnamupatgrlb.supabase.co/functions/v1";
+
+interface AgentBuddyProperty {
+  address: string;
+  suburb: string;
+  city: string;
+  latitude: number | null;
+  longitude: number | null;
+  relationshipType: string;
+}
+
 interface AgentBuddyContact {
   id: string;
+  firstName: string | null;
+  lastName: string | null;
   email: string;
-  first_name?: string;
-  last_name?: string;
-  phone?: string;
-  address?: string;
-  suburb?: string;
-  city?: string;
-  latitude?: number;
-  longitude?: number;
-  metadata?: Record<string, any>;
+  phone: string | null;
+  currentAddress: string | null;
+  classification: string | null;
+  createdAt: string;
+  updatedAt: string;
+  properties: AgentBuddyProperty[];
 }
 
 interface AgentBuddyResponse {
   contacts: AgentBuddyContact[];
-  next_cursor?: string;
-  has_more: boolean;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  totalCount: number;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -62,7 +74,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Get AgentBuddy connection with API key
     const { data: connection, error: connError } = await supabase
       .from("agentbuddy_connections")
-      .select("api_key")
+      .select("api_key, updated_at")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -74,28 +86,42 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log("Syncing contacts for user:", user.id);
+    // Parse request body for incremental sync option
+    let modifiedSince: string | undefined;
+    try {
+      const body = await req.json();
+      modifiedSince = body.modifiedSince;
+    } catch {
+      // No body provided, do full sync
+    }
 
-    const agentBuddyApiUrl = Deno.env.get("AGENTBUDDY_API_URL") || "https://api.agentbuddy.com";
-    
+    console.log("Syncing contacts for user:", user.id, modifiedSince ? `since ${modifiedSince}` : "(full sync)");
+
     let synced = 0;
     let errors = 0;
-    let cursor: string | undefined = undefined;
+    let page = 1;
     let hasMore = true;
+    const pageSize = 100;
 
     // Paginate through all contacts
     while (hasMore) {
-      const requestBody: Record<string, any> = { limit: 500 };
-      if (cursor) {
-        requestBody.cursor = cursor;
+      const requestBody: Record<string, any> = { 
+        page,
+        pageSize,
+      };
+      
+      if (modifiedSince) {
+        requestBody.modifiedSince = modifiedSince;
       }
 
+      console.log(`Fetching page ${page}...`);
+
       const response = await fetch(
-        `${agentBuddyApiUrl}/v1/broadcast-get-contacts`,
+        `${AGENTBUDDY_BASE_URL}/broadcast-get-contacts`,
         {
           method: "POST",
           headers: {
-            "X-API-Key": connection.api_key,
+            "x-api-key": connection.api_key,
             "Content-Type": "application/json",
           },
           body: JSON.stringify(requestBody),
@@ -120,24 +146,33 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       const data: AgentBuddyResponse = await response.json();
+      console.log(`Received ${data.contacts.length} contacts (page ${page}/${data.totalPages})`);
       
       for (const contact of data.contacts) {
-        // Upsert contact based on email
+        // Get primary property for address info
+        const primaryProperty = contact.properties?.[0];
+        
+        // Upsert contact based on agentbuddy_customer_id
         const { error: upsertError } = await supabase
           .from("contacts")
           .upsert({
             user_id: user.id,
             email: contact.email,
-            first_name: contact.first_name || null,
-            last_name: contact.last_name || null,
+            first_name: contact.firstName || null,
+            last_name: contact.lastName || null,
             phone: contact.phone || null,
-            address: contact.address || null,
-            address_suburb: contact.suburb || null,
-            address_city: contact.city || null,
-            latitude: contact.latitude || null,
-            longitude: contact.longitude || null,
+            address: primaryProperty?.address || contact.currentAddress || null,
+            address_suburb: primaryProperty?.suburb || null,
+            address_city: primaryProperty?.city || null,
+            latitude: primaryProperty?.latitude || null,
+            longitude: primaryProperty?.longitude || null,
             agentbuddy_customer_id: contact.id,
-            metadata: contact.metadata || {},
+            metadata: {
+              classification: contact.classification,
+              properties: contact.properties,
+              agentbuddy_created_at: contact.createdAt,
+              agentbuddy_updated_at: contact.updatedAt,
+            },
             updated_at: new Date().toISOString(),
           }, { 
             onConflict: "user_id,email",
@@ -152,8 +187,8 @@ const handler = async (req: Request): Promise<Response> => {
         }
       }
 
-      cursor = data.next_cursor;
-      hasMore = data.has_more && !!cursor;
+      page++;
+      hasMore = page <= data.totalPages;
     }
 
     console.log(`Sync complete: ${synced} synced, ${errors} errors`);

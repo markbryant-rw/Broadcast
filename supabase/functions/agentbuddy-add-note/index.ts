@@ -6,11 +6,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const AGENTBUDDY_BASE_URL = "https://mxsefnpxrnamupatgrlb.supabase.co/functions/v1";
+
 interface AddNoteRequest {
   agentbuddy_customer_id: string;
-  note_content: string;
-  related_property_address?: string;
-  note_type?: string;
+  message_summary: string;
+  message_type?: string;
+  property_address?: string;
+  external_id?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -72,39 +75,45 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Parse request body
     const body: AddNoteRequest = await req.json();
-    const { agentbuddy_customer_id, note_content, related_property_address, note_type = "sms_sent" } = body;
+    const { 
+      agentbuddy_customer_id, 
+      message_summary, 
+      message_type = "nearby_sale_notification",
+      property_address,
+      external_id,
+    } = body;
 
-    if (!agentbuddy_customer_id || !note_content) {
+    if (!agentbuddy_customer_id || !message_summary) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: agentbuddy_customer_id, note_content" }),
+        JSON.stringify({ error: "Missing required fields: agentbuddy_customer_id, message_summary" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`Adding note to AgentBuddy contact: ${agentbuddy_customer_id}`);
+    console.log(`Logging SMS activity for AgentBuddy contact: ${agentbuddy_customer_id}`);
 
-    // Construct the note payload for AgentBuddy webhook
-    const notePayload = {
-      contact_id: agentbuddy_customer_id,
-      event_type: note_type,
-      content: note_content,
-      related_property_address: related_property_address || null,
-      timestamp: new Date().toISOString(),
-      source: "broadcast",
+    // Construct the webhook payload per AgentBuddy API spec
+    const webhookPayload = {
+      event: "sms_sent",
+      data: {
+        contactId: agentbuddy_customer_id,
+        propertyAddress: property_address || null,
+        messageType: message_type,
+        messageSummary: message_summary,
+        externalId: external_id || `broadcast-${Date.now()}`,
+      },
     };
 
     // Call AgentBuddy webhook to log activity
-    const agentBuddyApiUrl = Deno.env.get("AGENTBUDDY_API_URL") || "https://api.agentbuddy.com";
-    
     const response = await fetch(
-      `${agentBuddyApiUrl}/v1/broadcast-webhook`,
+      `${AGENTBUDDY_BASE_URL}/broadcast-webhook`,
       {
         method: "POST",
         headers: {
-          "X-API-Key": connection.api_key,
+          "x-api-key": connection.api_key,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(notePayload),
+        body: JSON.stringify(webhookPayload),
       }
     );
 
@@ -127,19 +136,18 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       return new Response(
-        JSON.stringify({ error: "Failed to add note to AgentBuddy", details: errorText }),
+        JSON.stringify({ error: "Failed to log activity to AgentBuddy", details: errorText }),
         { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const result = await response.json();
-    console.log("Note added successfully:", result);
+    console.log("Activity logged successfully:", result);
 
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: "Note added to AgentBuddy",
-        note_id: result.id || null,
+        message: "SMS activity logged to AgentBuddy",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

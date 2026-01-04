@@ -6,6 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const AGENTBUDDY_BASE_URL = "https://mxsefnpxrnamupatgrlb.supabase.co/functions/v1";
+
 const handler = async (req: Request): Promise<Response> => {
   console.log("AgentBuddy validate function called");
 
@@ -51,40 +53,37 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Validating API key for user:", user.id);
 
-    // TODO: Replace with actual AgentBuddy API validation
-    // For now, we validate by attempting to fetch contacts
-    const agentBuddyApiUrl = Deno.env.get("AGENTBUDDY_API_URL") || "https://api.agentbuddy.com";
-    
-    try {
-      const validateResponse = await fetch(
-        `${agentBuddyApiUrl}/v1/broadcast-get-contacts`,
-        {
-          method: "POST",
-          headers: {
-            "X-API-Key": api_key.trim(),
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ limit: 1 }),
-        }
-      );
-
-      // For development, accept the key if we can't reach AgentBuddy
-      // In production, this should strictly validate
-      if (!validateResponse.ok && validateResponse.status !== 0) {
-        if (validateResponse.status === 401 || validateResponse.status === 403) {
-          console.error("Invalid AgentBuddy API key");
-          return new Response(
-            JSON.stringify({ error: "Invalid API key" }),
-            { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
+    // Validate by attempting to fetch one contact
+    const validateResponse = await fetch(
+      `${AGENTBUDDY_BASE_URL}/broadcast-get-contacts`,
+      {
+        method: "POST",
+        headers: {
+          "x-api-key": api_key.trim(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ page: 1, pageSize: 1 }),
       }
-    } catch (fetchError) {
-      // If we can't reach the API, log it but continue (for development)
-      console.log("Could not reach AgentBuddy API for validation:", fetchError);
+    );
+
+    if (!validateResponse.ok) {
+      const errorText = await validateResponse.text();
+      console.error(`AgentBuddy validation failed: ${validateResponse.status} - ${errorText}`);
+      
+      if (validateResponse.status === 401 || validateResponse.status === 403) {
+        return new Response(
+          JSON.stringify({ error: "Invalid API key. Please check your key in AgentBuddy Settings." }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      return new Response(
+        JSON.stringify({ error: "Failed to validate API key with AgentBuddy" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    // Store the API key
+    // API key is valid - store it
     const { error: upsertError } = await supabase
       .from("agentbuddy_connections")
       .upsert({
@@ -102,10 +101,10 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log("API key stored successfully for user:", user.id);
+    console.log("API key validated and stored for user:", user.id);
 
     return new Response(
-      JSON.stringify({ success: true, message: "AgentBuddy connected" }),
+      JSON.stringify({ success: true, message: "AgentBuddy connected successfully" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
