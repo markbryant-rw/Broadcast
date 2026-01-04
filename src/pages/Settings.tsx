@@ -20,7 +20,8 @@ import { useUserSettings, useUpdateUserSettings } from '@/hooks/useUserSettings'
 import { DomainManager } from '@/components/organizations/DomainManager';
 import { OrganizationSettings } from '@/components/organizations/OrganizationSettings';
 import SMSTemplateManager from '@/components/sms/SMSTemplateManager';
-import { User, Mail, Shield, Bell, Loader2, Building2, MessageSquare, Timer, Target, MapPin } from 'lucide-react';
+import { BulkGeocoder } from '@/components/settings/BulkGeocoder';
+import { User, Mail, Shield, Bell, Loader2, Building2, MessageSquare, Timer, Target, MapPin, Database } from 'lucide-react';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -99,6 +100,10 @@ export default function Settings() {
             <TabsTrigger value="notifications" className="gap-2">
               <Bell className="h-4 w-4" />
               Notifications
+            </TabsTrigger>
+            <TabsTrigger value="data" className="gap-2">
+              <Database className="h-4 w-4" />
+              Data
             </TabsTrigger>
           </TabsList>
 
@@ -356,6 +361,10 @@ export default function Settings() {
                 </p>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="data" className="mt-6 space-y-6">
+            <BulkGeocoder />
           </TabsContent>
         </Tabs>
       </div>
