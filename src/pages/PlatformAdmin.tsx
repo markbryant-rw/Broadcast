@@ -28,7 +28,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Building2, Users, Globe, Shield, Search, Trash2, CheckCircle, Clock } from "lucide-react";
+import { Building2, Users, Globe, Shield, Search, Trash2, CheckCircle, Clock, FileSpreadsheet } from "lucide-react";
+import SalesUploader from "@/components/sales/SalesUploader";
 
 export default function PlatformAdmin() {
   const { user } = useAuth();
@@ -281,6 +282,10 @@ export default function PlatformAdmin() {
               <Globe className="h-4 w-4" />
               Domains
             </TabsTrigger>
+            <TabsTrigger value="sales" className="gap-2">
+              <FileSpreadsheet className="h-4 w-4" />
+              Sales Data
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="organizations">
@@ -491,6 +496,10 @@ export default function PlatformAdmin() {
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="sales">
+            <SalesUploader />
           </TabsContent>
         </Tabs>
       </div>
