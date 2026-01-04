@@ -17,6 +17,7 @@ import Integrations from "./pages/Integrations";
 import Settings from "./pages/Settings";
 import PlatformAdmin from "./pages/PlatformAdmin";
 import SMS from "./pages/SMS";
+import ConnectAgentBuddy from "./pages/ConnectAgentBuddy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/sms" element={<ProtectedRoute><SMS /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/platform-admin" element={<ProtectedRoute><PlatformAdmin /></ProtectedRoute>} />
+            <Route path="/connect/agentbuddy" element={<ConnectAgentBuddy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
