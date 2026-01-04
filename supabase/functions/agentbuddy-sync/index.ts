@@ -6,13 +6,24 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface AgentBuddyCustomer {
+interface AgentBuddyContact {
   id: string;
   email: string;
   first_name?: string;
   last_name?: string;
-  plan_name?: string;
+  phone?: string;
+  address?: string;
+  suburb?: string;
+  city?: string;
+  latitude?: number;
+  longitude?: number;
   metadata?: Record<string, any>;
+}
+
+interface AgentBuddyResponse {
+  contacts: AgentBuddyContact[];
+  next_cursor?: string;
+  has_more: boolean;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -48,10 +59,10 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Get AgentBuddy connection
+    // Get AgentBuddy connection with API key
     const { data: connection, error: connError } = await supabase
       .from("agentbuddy_connections")
-      .select("*")
+      .select("api_key")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -63,60 +74,86 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log("Syncing customers for user:", user.id);
+    console.log("Syncing contacts for user:", user.id);
 
-    // Mock customer data - replace with actual AgentBuddy API call
-    const mockCustomers: AgentBuddyCustomer[] = [
-      {
-        id: "cust_001",
-        email: "john@example.com",
-        first_name: "John",
-        last_name: "Doe",
-        plan_name: "Pro",
-      },
-      {
-        id: "cust_002",
-        email: "jane@example.com",
-        first_name: "Jane",
-        last_name: "Smith",
-        plan_name: "Enterprise",
-      },
-      {
-        id: "cust_003",
-        email: "bob@example.com",
-        first_name: "Bob",
-        last_name: "Wilson",
-        plan_name: "Starter",
-      },
-    ];
-
+    const agentBuddyApiUrl = Deno.env.get("AGENTBUDDY_API_URL") || "https://api.agentbuddy.com";
+    
     let synced = 0;
     let errors = 0;
+    let cursor: string | undefined = undefined;
+    let hasMore = true;
 
-    for (const customer of mockCustomers) {
-      // Upsert contact based on email
-      const { error: upsertError } = await supabase
-        .from("contacts")
-        .upsert({
-          user_id: user.id,
-          email: customer.email,
-          first_name: customer.first_name || null,
-          last_name: customer.last_name || null,
-          plan_name: customer.plan_name || null,
-          agentbuddy_customer_id: customer.id,
-          metadata: customer.metadata || {},
-          updated_at: new Date().toISOString(),
-        }, { 
-          onConflict: "user_id,email",
-          ignoreDuplicates: false 
-        });
-
-      if (upsertError) {
-        console.error("Error upserting contact:", upsertError);
-        errors++;
-      } else {
-        synced++;
+    // Paginate through all contacts
+    while (hasMore) {
+      const requestBody: Record<string, any> = { limit: 500 };
+      if (cursor) {
+        requestBody.cursor = cursor;
       }
+
+      const response = await fetch(
+        `${agentBuddyApiUrl}/v1/broadcast-get-contacts`,
+        {
+          method: "POST",
+          headers: {
+            "X-API-Key": connection.api_key,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`AgentBuddy API error: ${response.status} - ${errorText}`);
+        
+        if (response.status === 401 || response.status === 403) {
+          return new Response(
+            JSON.stringify({ error: "AgentBuddy API key is invalid or expired" }),
+            { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        
+        return new Response(
+          JSON.stringify({ error: "Failed to fetch contacts from AgentBuddy" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const data: AgentBuddyResponse = await response.json();
+      
+      for (const contact of data.contacts) {
+        // Upsert contact based on email
+        const { error: upsertError } = await supabase
+          .from("contacts")
+          .upsert({
+            user_id: user.id,
+            email: contact.email,
+            first_name: contact.first_name || null,
+            last_name: contact.last_name || null,
+            phone: contact.phone || null,
+            address: contact.address || null,
+            address_suburb: contact.suburb || null,
+            address_city: contact.city || null,
+            latitude: contact.latitude || null,
+            longitude: contact.longitude || null,
+            agentbuddy_customer_id: contact.id,
+            metadata: contact.metadata || {},
+            updated_at: new Date().toISOString(),
+          }, { 
+            onConflict: "user_id,email",
+            ignoreDuplicates: false 
+          });
+
+        if (upsertError) {
+          console.error("Error upserting contact:", upsertError);
+          errors++;
+        } else {
+          synced++;
+        }
+      }
+
+      cursor = data.next_cursor;
+      hasMore = data.has_more && !!cursor;
     }
 
     console.log(`Sync complete: ${synced} synced, ${errors} errors`);
@@ -126,7 +163,6 @@ const handler = async (req: Request): Promise<Response> => {
         success: true,
         synced,
         errors,
-        total: mockCustomers.length
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

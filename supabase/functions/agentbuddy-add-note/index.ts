@@ -47,10 +47,10 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Get AgentBuddy connection for this user
+    // Get AgentBuddy connection with API key
     const { data: connection, error: connError } = await supabase
       .from("agentbuddy_connections")
-      .select("access_token, token_expires_at")
+      .select("api_key")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -70,19 +70,6 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Check if token is expired
-    if (connection.token_expires_at) {
-      const expiresAt = new Date(connection.token_expires_at);
-      if (expiresAt < new Date()) {
-        console.log("AgentBuddy token expired");
-        // TODO: Implement token refresh
-        return new Response(
-          JSON.stringify({ error: "AgentBuddy token expired", code: "TOKEN_EXPIRED" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-    }
-
     // Parse request body
     const body: AddNoteRequest = await req.json();
     const { agentbuddy_customer_id, note_content, related_property_address, note_type = "sms_sent" } = body;
@@ -96,25 +83,25 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Adding note to AgentBuddy contact: ${agentbuddy_customer_id}`);
 
-    // Construct the note payload
+    // Construct the note payload for AgentBuddy webhook
     const notePayload = {
-      note_type,
+      contact_id: agentbuddy_customer_id,
+      event_type: note_type,
       content: note_content,
       related_property_address: related_property_address || null,
       timestamp: new Date().toISOString(),
-      source: "broadcast_sms",
+      source: "broadcast",
     };
 
-    // Call AgentBuddy API to add note
-    // TODO: Replace with actual AgentBuddy API endpoint when available
+    // Call AgentBuddy webhook to log activity
     const agentBuddyApiUrl = Deno.env.get("AGENTBUDDY_API_URL") || "https://api.agentbuddy.com";
     
     const response = await fetch(
-      `${agentBuddyApiUrl}/contacts/${agentbuddy_customer_id}/notes`,
+      `${agentBuddyApiUrl}/v1/broadcast-webhook`,
       {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${connection.access_token}`,
+          "X-API-Key": connection.api_key,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(notePayload),
@@ -125,7 +112,13 @@ const handler = async (req: Request): Promise<Response> => {
       const errorText = await response.text();
       console.error(`AgentBuddy API error: ${response.status} - ${errorText}`);
       
-      // If it's a 404, the contact might not exist in AgentBuddy
+      if (response.status === 401 || response.status === 403) {
+        return new Response(
+          JSON.stringify({ error: "AgentBuddy API key is invalid or expired" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
       if (response.status === 404) {
         return new Response(
           JSON.stringify({ error: "Contact not found in AgentBuddy", code: "CONTACT_NOT_FOUND" }),

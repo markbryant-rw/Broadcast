@@ -7,8 +7,6 @@ interface ConnectionStatus {
   connected: boolean;
   connection?: {
     connected_at: string;
-    scopes: string[];
-    token_expires_at: string;
   };
 }
 
@@ -19,70 +17,48 @@ export function useAgentBuddy() {
   const statusQuery = useQuery({
     queryKey: ['agentbuddy-status'],
     queryFn: async (): Promise<ConnectionStatus> => {
-      const { data, error } = await supabase.functions.invoke('agentbuddy-oauth', {
-        body: {},
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
+      const { data, error } = await supabase
+        .from('agentbuddy_connections')
+        .select('connected_at')
+        .eq('user_id', session!.user.id)
+        .maybeSingle();
 
-      // Parse the URL to add action parameter
-      const response = await fetch(
-        `https://bessucubulzbrrujkcxg.supabase.co/functions/v1/agentbuddy-oauth?action=status`,
-        {
-          headers: {
-            Authorization: `Bearer ${session?.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      if (error) throw error;
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch status');
-      }
-
-      return response.json();
+      return {
+        connected: !!data,
+        connection: data ? { connected_at: data.connected_at } : undefined,
+      };
     },
-    enabled: !!session?.access_token,
+    enabled: !!session?.user?.id,
     staleTime: 30000,
   });
 
   const connect = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (apiKey: string) => {
+      if (!apiKey.trim()) {
+        throw new Error('API key is required');
+      }
+
+      // Validate the API key by making a test call to AgentBuddy
       const response = await fetch(
-        `https://bessucubulzbrrujkcxg.supabase.co/functions/v1/agentbuddy-oauth?action=authorize`,
+        `https://bessucubulzbrrujkcxg.supabase.co/functions/v1/agentbuddy-validate`,
         {
+          method: 'POST',
           headers: {
             Authorization: `Bearer ${session?.access_token}`,
             'Content-Type': 'application/json',
           },
+          body: JSON.stringify({ api_key: apiKey }),
         }
       );
 
       if (!response.ok) {
-        throw new Error('Failed to get authorization URL');
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to validate API key');
       }
 
-      const { auth_url } = await response.json();
-      
-      // Open OAuth popup
-      const popup = window.open(auth_url, 'agentbuddy-oauth', 'width=600,height=700');
-      
-      // Listen for success message
-      return new Promise((resolve, reject) => {
-        const handleMessage = (event: MessageEvent) => {
-          if (event.data?.type === 'agentbuddy-oauth-success') {
-            window.removeEventListener('message', handleMessage);
-            resolve(true);
-          }
-        };
-        
-        window.addEventListener('message', handleMessage);
-        
-        // Timeout after 5 minutes
-        setTimeout(() => {
-          window.removeEventListener('message', handleMessage);
-          reject(new Error('OAuth timeout'));
-        }, 300000);
-      });
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['agentbuddy-status'] });
@@ -95,22 +71,13 @@ export function useAgentBuddy() {
 
   const disconnect = useMutation({
     mutationFn: async () => {
-      const response = await fetch(
-        `https://bessucubulzbrrujkcxg.supabase.co/functions/v1/agentbuddy-oauth?action=disconnect`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${session?.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const { error } = await supabase
+        .from('agentbuddy_connections')
+        .delete()
+        .eq('user_id', session!.user.id);
 
-      if (!response.ok) {
-        throw new Error('Failed to disconnect');
-      }
-
-      return response.json();
+      if (error) throw error;
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['agentbuddy-status'] });
@@ -135,7 +102,8 @@ export function useAgentBuddy() {
       );
 
       if (!response.ok) {
-        throw new Error('Failed to sync customers');
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to sync customers');
       }
 
       return response.json();
