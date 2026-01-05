@@ -30,6 +30,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Building2, Users, Globe, Shield, Search, Trash2, CheckCircle, Clock, FileSpreadsheet } from "lucide-react";
 import SalesUploader from "@/components/sales/SalesUploader";
+import SalesDataTable from "@/components/sales/SalesDataTable";
 
 export default function PlatformAdmin() {
   const { user } = useAuth();
@@ -498,8 +499,9 @@ export default function PlatformAdmin() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="sales">
+          <TabsContent value="sales" className="space-y-6">
             <SalesUploader />
+            <SalesDataTable />
           </TabsContent>
         </Tabs>
       </div>
