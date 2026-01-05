@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,10 +8,20 @@ import { Mail, Plus, FileEdit, Clock, Send, Loader2 } from 'lucide-react';
 import { useCampaigns } from '@/hooks/useCampaigns';
 import CampaignsList from '@/components/campaigns/CampaignsList';
 import CreateCampaignDialog from '@/components/campaigns/CreateCampaignDialog';
+import { usePlatformAdmin } from '@/hooks/usePlatformAdmin';
 
 export default function Campaigns() {
+  const navigate = useNavigate();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { campaigns, isLoading, addCampaign, deleteCampaign } = useCampaigns();
+  const { isPlatformAdmin, isLoading: isAdminLoading } = usePlatformAdmin();
+
+  // Redirect non-platform admins to dashboard
+  useEffect(() => {
+    if (!isAdminLoading && !isPlatformAdmin) {
+      navigate('/dashboard');
+    }
+  }, [isPlatformAdmin, isAdminLoading, navigate]);
 
   const counts = useMemo(() => ({
     all: campaigns.length,
@@ -44,7 +55,7 @@ export default function Campaigns() {
     return campaigns.filter(c => c.status === status);
   };
 
-  if (isLoading) {
+  if (isLoading || isAdminLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
@@ -52,6 +63,11 @@ export default function Campaigns() {
         </div>
       </DashboardLayout>
     );
+  }
+
+  // Don't render if not platform admin (will redirect)
+  if (!isPlatformAdmin) {
+    return null;
   }
 
   const EmptyState = ({ icon: Icon, title, description }: { icon: typeof Mail; title: string; description: string }) => (

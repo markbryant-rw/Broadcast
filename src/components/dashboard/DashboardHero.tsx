@@ -1,14 +1,16 @@
 import { Link } from 'react-router-dom';
-import { MessageSquare, Mail, ArrowRight, Flame, Home, Send, BarChart3 } from 'lucide-react';
+import { MessageSquare, Mail, ArrowRight, Flame, Home, Send, BarChart3, Clock } from 'lucide-react';
 import { useHotOpportunities } from '@/hooks/useHotOpportunities';
 import { useNearbySales } from '@/hooks/useNearbySales';
 import { useCampaigns } from '@/hooks/useCampaigns';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { usePlatformAdmin } from '@/hooks/usePlatformAdmin';
 
 export default function DashboardHero() {
   const { user } = useAuth();
+  const { isPlatformAdmin } = usePlatformAdmin();
   
   // SMS Stats
   const { data: opportunities } = useHotOpportunities(100);
@@ -130,62 +132,101 @@ export default function DashboardHero() {
           <div className="absolute bottom-0 left-0 w-28 h-28 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
         </Link>
 
-        {/* Email Card */}
-        <Link
-          to="/campaigns"
-          className="group relative overflow-hidden rounded-2xl p-6 sm:p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl animate-fade-in opacity-0"
-          style={{ background: 'var(--gradient-accent)', animationDelay: '200ms', animationFillMode: 'forwards' }}
-        >
-          <div className="relative z-10 flex flex-col h-full min-h-[220px]">
-            <div className="h-14 w-14 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center mb-4">
-              <Mail className="h-7 w-7 text-accent-foreground" />
+        {/* Email Card - Coming Soon for non-platform admins */}
+        {isPlatformAdmin ? (
+          <Link
+            to="/campaigns"
+            className="group relative overflow-hidden rounded-2xl p-6 sm:p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl animate-fade-in opacity-0"
+            style={{ background: 'var(--gradient-accent)', animationDelay: '200ms', animationFillMode: 'forwards' }}
+          >
+            <div className="relative z-10 flex flex-col h-full min-h-[220px]">
+              <div className="h-14 w-14 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center mb-4">
+                <Mail className="h-7 w-7 text-accent-foreground" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-2xl font-display font-bold text-accent-foreground mb-2">
+                  Email Campaigns
+                </h2>
+                <p className="text-accent-foreground/80 text-sm sm:text-base">
+                  Create and send beautiful email campaigns
+                </p>
+              </div>
+
+              {/* Mini Stats */}
+              <div className="flex flex-wrap gap-2 mt-4 mb-3">
+                {campaignCount > 0 && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm">
+                    <Send className="h-4 w-4 text-accent-foreground" />
+                    <span className="text-sm font-medium text-accent-foreground">
+                      {sentCampaigns} sent, {campaignCount - sentCampaigns} draft{campaignCount - sentCampaigns !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                )}
+                {avgOpenRate !== null && avgOpenRate > 0 && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm">
+                    <BarChart3 className="h-4 w-4 text-accent-foreground" />
+                    <span className="text-sm font-medium text-accent-foreground">
+                      {avgOpenRate}% avg open rate
+                    </span>
+                  </div>
+                )}
+                {campaignCount === 0 && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm">
+                    <span className="text-sm text-accent-foreground/80">
+                      Create your first campaign
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 text-accent-foreground text-sm font-medium group-hover:gap-3 transition-all">
+                Open Campaigns
+                <ArrowRight className="h-4 w-4" />
+              </div>
             </div>
-            <div className="flex-1">
-              <h2 className="text-2xl font-display font-bold text-accent-foreground mb-2">
-                Email Campaigns
-              </h2>
-              <p className="text-accent-foreground/80 text-sm sm:text-base">
-                Create and send beautiful email campaigns
+            
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-28 h-28 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+          </Link>
+        ) : (
+          <div
+            className="relative overflow-hidden rounded-2xl p-6 sm:p-8 animate-fade-in opacity-0"
+            style={{ background: 'var(--gradient-accent)', animationDelay: '200ms', animationFillMode: 'forwards' }}
+          >
+            <div className="relative z-10 flex flex-col h-full min-h-[220px]">
+              <div className="h-14 w-14 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center mb-4">
+                <Mail className="h-7 w-7 text-accent-foreground" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-2xl font-display font-bold text-accent-foreground mb-2">
+                  Email Campaigns
+                </h2>
+                <p className="text-accent-foreground/80 text-sm sm:text-base">
+                  Create and send beautiful email campaigns
+                </p>
+              </div>
+
+              {/* Coming Soon Badge */}
+              <div className="flex flex-wrap gap-2 mt-4 mb-3">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm">
+                  <Clock className="h-4 w-4 text-accent-foreground" />
+                  <span className="text-sm font-medium text-accent-foreground">
+                    Coming Soon
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-accent-foreground/70 text-sm">
+                Email functionality is on the way!
               </p>
             </div>
-
-            {/* Mini Stats */}
-            <div className="flex flex-wrap gap-2 mt-4 mb-3">
-              {campaignCount > 0 && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm">
-                  <Send className="h-4 w-4 text-accent-foreground" />
-                  <span className="text-sm font-medium text-accent-foreground">
-                    {sentCampaigns} sent, {campaignCount - sentCampaigns} draft{campaignCount - sentCampaigns !== 1 ? 's' : ''}
-                  </span>
-                </div>
-              )}
-              {avgOpenRate !== null && avgOpenRate > 0 && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm">
-                  <BarChart3 className="h-4 w-4 text-accent-foreground" />
-                  <span className="text-sm font-medium text-accent-foreground">
-                    {avgOpenRate}% avg open rate
-                  </span>
-                </div>
-              )}
-              {campaignCount === 0 && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm">
-                  <span className="text-sm text-accent-foreground/80">
-                    Create your first campaign
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 text-accent-foreground text-sm font-medium group-hover:gap-3 transition-all">
-              Open Campaigns
-              <ArrowRight className="h-4 w-4" />
-            </div>
+            
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-28 h-28 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
           </div>
-          
-          {/* Decorative elements */}
-          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-28 h-28 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
-        </Link>
+        )}
       </div>
     </div>
   );

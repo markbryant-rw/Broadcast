@@ -36,12 +36,15 @@ interface DashboardLayoutProps {
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Contacts', href: '/contacts', icon: Users },
-  { name: 'Campaigns', href: '/campaigns', icon: Mail },
   { name: 'SMS', href: '/sms', icon: MessageSquare },
   { name: 'Templates', href: '/templates', icon: FileText },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Integrations', href: '/integrations', icon: Link2 },
   { name: 'Settings', href: '/settings', icon: Settings },
+];
+
+const adminOnlyNavigation = [
+  { name: 'Campaigns', href: '/campaigns', icon: Mail },
 ];
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
@@ -87,6 +90,26 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-1">
           {navigation.map((item) => {
+            const isActive = location.pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                to={item.href}
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                    : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent'
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                {item.name}
+              </Link>
+            );
+          })}
+          
+          {/* Admin-only navigation (Campaigns) */}
+          {isPlatformAdmin && adminOnlyNavigation.map((item) => {
             const isActive = location.pathname === item.href;
             return (
               <Link
