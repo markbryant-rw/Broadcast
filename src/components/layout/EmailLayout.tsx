@@ -10,58 +10,24 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Radio,
-  LayoutDashboard,
-  Users,
-  Mail,
-  MessageSquare,
-  FileText,
-  BarChart3,
-  Settings,
-  Link2,
-  LogOut,
-  ChevronDown,
-  Shield,
-} from 'lucide-react';
+import { Radio, LogOut, Settings, Mail, FileText, BarChart3, Users, ChevronDown, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { OrganizationSwitcher } from '@/components/organizations/OrganizationSwitcher';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 
-interface DashboardLayoutProps {
+interface EmailLayoutProps {
   children: ReactNode;
 }
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Contacts', href: '/contacts', icon: Users },
-  { name: 'SMS', href: '/sms', icon: MessageSquare },
-  { name: 'Templates', href: '/templates', icon: FileText },
-  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { name: 'Integrations', href: '/integrations', icon: Link2 },
-  { name: 'Settings', href: '/settings', icon: Settings },
-];
-
-const adminOnlyNavigation = [
+const emailNavigation = [
   { name: 'Campaigns', href: '/campaigns', icon: Mail },
+  { name: 'Templates', href: '/templates', icon: FileText },
+  { name: 'Contacts', href: '/email/contacts', icon: Users },
+  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
 ];
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+export default function EmailLayout({ children }: EmailLayoutProps) {
   const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-
-  const { data: isPlatformAdmin } = useQuery({
-    queryKey: ['isPlatformAdmin', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return false;
-      const { data, error } = await supabase.rpc('is_platform_admin', { _user_id: user.id });
-      if (error) return false;
-      return data as boolean;
-    },
-    enabled: !!user?.id,
-  });
 
   const handleSignOut = async () => {
     await signOut();
@@ -76,20 +42,28 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-sidebar border-r border-sidebar-border">
         {/* Logo */}
         <div className="h-16 flex items-center gap-3 px-6 border-b border-sidebar-border">
-          <div className="h-9 w-9 rounded-lg gradient-primary flex items-center justify-center">
-            <Radio className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <span className="text-xl font-display font-bold text-sidebar-foreground">Broadcast</span>
+          <Link to="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <div className="h-9 w-9 rounded-lg gradient-accent flex items-center justify-center">
+              <Mail className="h-5 w-5 text-accent-foreground" />
+            </div>
+            <span className="text-xl font-display font-bold text-sidebar-foreground">Email</span>
+          </Link>
         </div>
 
-        {/* Organization Switcher */}
+        {/* Back to Hub */}
         <div className="px-4 py-4 border-b border-sidebar-border">
-          <OrganizationSwitcher />
+          <Link
+            to="/dashboard"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+          >
+            <LayoutDashboard className="h-4 w-4" />
+            Back to Hub
+          </Link>
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-1">
-          {navigation.map((item) => {
+          {emailNavigation.map((item) => {
             const isActive = location.pathname === item.href;
             return (
               <Link
@@ -107,42 +81,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </Link>
             );
           })}
-          
-          {/* Admin-only navigation (Campaigns) */}
-          {isPlatformAdmin && adminOnlyNavigation.map((item) => {
-            const isActive = location.pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                    : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent'
-                )}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.name}
-              </Link>
-            );
-          })}
-          
-          {/* Platform Admin Link - only visible to platform admins */}
-          {isPlatformAdmin && (
-            <Link
-              to="/platform-admin"
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                location.pathname === '/platform-admin'
-                  ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                  : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent'
-              )}
-            >
-              <Shield className="h-5 w-5" />
-              Platform Admin
-            </Link>
-          )}
         </nav>
 
         {/* User Menu */}
@@ -188,12 +126,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <main className="flex-1 flex flex-col min-h-screen">
         {/* Mobile Header */}
         <header className="lg:hidden h-16 flex items-center justify-between px-4 border-b border-border bg-card">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg gradient-primary flex items-center justify-center">
-              <Radio className="h-5 w-5 text-primary-foreground" />
+          <Link to="/dashboard" className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg gradient-accent flex items-center justify-center">
+              <Mail className="h-5 w-5 text-accent-foreground" />
             </div>
-            <span className="text-xl font-display font-bold">Broadcast</span>
-          </div>
+            <span className="text-xl font-display font-bold">Email</span>
+          </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -205,7 +143,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              {navigation.map((item) => (
+              <DropdownMenuItem asChild>
+                <Link to="/dashboard">
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  Back to Hub
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {emailNavigation.map((item) => (
                 <DropdownMenuItem key={item.name} asChild>
                   <Link to={item.href}>
                     <item.icon className="mr-2 h-4 w-4" />
@@ -213,6 +158,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   </Link>
                 </DropdownMenuItem>
               ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link to="/settings">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />

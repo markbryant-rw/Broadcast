@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import DashboardLayout from "@/components/layout/DashboardLayout";
+import SettingsLayout from "@/components/layout/SettingsLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -158,23 +158,23 @@ export default function PlatformAdmin() {
 
   if (checkingAdmin) {
     return (
-      <DashboardLayout>
+      <SettingsLayout>
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">Checking permissions...</p>
         </div>
-      </DashboardLayout>
+      </SettingsLayout>
     );
   }
 
   if (!isPlatformAdmin) {
     return (
-      <DashboardLayout>
+      <SettingsLayout>
         <div className="flex flex-col items-center justify-center h-64 gap-4">
           <Shield className="h-16 w-16 text-muted-foreground" />
           <h2 className="text-2xl font-bold">Access Denied</h2>
           <p className="text-muted-foreground">You don't have platform admin privileges.</p>
         </div>
-      </DashboardLayout>
+      </SettingsLayout>
     );
   }
 
@@ -190,7 +190,7 @@ export default function PlatformAdmin() {
   );
 
   return (
-    <DashboardLayout>
+    <SettingsLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -505,6 +505,6 @@ export default function PlatformAdmin() {
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
+    </SettingsLayout>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import DashboardLayout from '@/components/layout/DashboardLayout';
+import EmailLayout from '@/components/layout/EmailLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -57,11 +57,11 @@ export default function Campaigns() {
 
   if (isLoading || isAdminLoading) {
     return (
-      <DashboardLayout>
+      <EmailLayout>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </DashboardLayout>
+      </EmailLayout>
     );
   }
 
@@ -83,7 +83,7 @@ export default function Campaigns() {
   );
 
   return (
-    <DashboardLayout>
+    <EmailLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -163,6 +163,6 @@ export default function Campaigns() {
         onOpenChange={setIsCreateDialogOpen}
         onSubmit={handleCreateCampaign}
       />
-    </DashboardLayout>
+    </EmailLayout>
   );
 }

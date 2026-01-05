@@ -16,8 +16,9 @@ export default function DashboardHero() {
   const { data: opportunities } = useHotOpportunities(100);
   const { sales } = useNearbySales();
   
-  // Email Stats
+  // Email Stats (only fetch for platform admins)
   const { campaigns } = useCampaigns();
+  const shouldFetchEmailStats = isPlatformAdmin;
 
   // Get greeting based on time of day
   const getGreeting = () => {
@@ -36,7 +37,7 @@ export default function DashboardHero() {
     s.created_at && new Date(s.created_at) > sevenDaysAgo
   ).length || 0;
 
-  // Calculate average open rate from campaign analytics
+  // Calculate average open rate from campaign analytics (only for admins)
   const { data: avgOpenRate } = useQuery({
     queryKey: ['campaign-avg-open-rate'],
     queryFn: async () => {
@@ -52,6 +53,7 @@ export default function DashboardHero() {
       if (totalRecipients === 0) return null;
       return Math.round((totalOpened / totalRecipients) * 100);
     },
+    enabled: shouldFetchEmailStats,
   });
 
   const hotOppsCount = opportunities?.length || 0;

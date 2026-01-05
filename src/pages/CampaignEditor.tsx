@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { format } from 'date-fns';
-import DashboardLayout from '@/components/layout/DashboardLayout';
+import EmailLayout from '@/components/layout/EmailLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -144,21 +144,21 @@ export default function CampaignEditor() {
 
   if (!campaign) {
     return (
-      <DashboardLayout>
+      <EmailLayout>
         <div className="flex flex-col items-center justify-center h-64">
           <p className="text-muted-foreground">Campaign not found</p>
           <Button variant="link" onClick={() => navigate('/campaigns')}>
             Back to campaigns
           </Button>
         </div>
-      </DashboardLayout>
+      </EmailLayout>
     );
   }
 
   const canSend = campaign.status === 'draft' || campaign.status === 'scheduled';
 
   return (
-    <DashboardLayout>
+    <EmailLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
@@ -289,6 +289,6 @@ export default function CampaignEditor() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </DashboardLayout>
+    </EmailLayout>
   );
 }
