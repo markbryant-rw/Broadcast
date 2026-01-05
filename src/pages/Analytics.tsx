@@ -1,11 +1,16 @@
-import DashboardLayout from '@/components/layout/DashboardLayout';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import EmailLayout from '@/components/layout/EmailLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { BarChart3, Loader2 } from 'lucide-react';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import MetricCards from '@/components/analytics/MetricCards';
 import AnalyticsCharts from '@/components/analytics/AnalyticsCharts';
+import { usePlatformAdmin } from '@/hooks/usePlatformAdmin';
 
 export default function Analytics() {
+  const navigate = useNavigate();
+  const { isPlatformAdmin, isLoading: isAdminLoading } = usePlatformAdmin();
   const { 
     summary, 
     isLoadingSummary, 
@@ -14,21 +19,32 @@ export default function Analytics() {
     isLoadingDaily 
   } = useAnalytics();
 
-  const isLoading = isLoadingSummary || isLoadingDaily;
+  // Redirect non-platform admins to dashboard
+  useEffect(() => {
+    if (!isAdminLoading && !isPlatformAdmin) {
+      navigate('/dashboard');
+    }
+  }, [isPlatformAdmin, isAdminLoading, navigate]);
+
+  const isLoading = isLoadingSummary || isLoadingDaily || isAdminLoading;
   const hasData = summary && summary.totalSent > 0;
 
   if (isLoading) {
     return (
-      <DashboardLayout>
+      <EmailLayout>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </DashboardLayout>
+      </EmailLayout>
     );
   }
 
+  if (!isPlatformAdmin) {
+    return null;
+  }
+
   return (
-    <DashboardLayout>
+    <EmailLayout>
       <div className="space-y-6">
         {/* Header */}
         <div>
@@ -90,6 +106,6 @@ export default function Analytics() {
           </>
         )}
       </div>
-    </DashboardLayout>
+    </EmailLayout>
   );
 }

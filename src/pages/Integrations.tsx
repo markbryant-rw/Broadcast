@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import DashboardLayout from '@/components/layout/DashboardLayout';
+import SettingsLayout from '@/components/layout/SettingsLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -59,7 +59,7 @@ export default function Integrations() {
   };
 
   return (
-    <DashboardLayout>
+    <SettingsLayout>
       <div className="space-y-6">
         {/* Header */}
         <div>
@@ -223,6 +223,6 @@ export default function Integrations() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+    </SettingsLayout>
   );
 }

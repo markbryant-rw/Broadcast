@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Search, Tag, Users, Trash2, Plus, Upload} from 'lucide-react';
-import DashboardLayout from '@/components/layout/DashboardLayout';
+import { Search, Tag, Users, Trash2, Plus, Upload } from 'lucide-react';
+import SMSLayout from '@/components/layout/SMSLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,7 +13,7 @@ import { useContacts } from '@/hooks/useContacts';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 
-export default function Contacts() {
+export default function SMSContacts() {
   const { contacts, isLoading, updateContact, deleteContact, addContact } = useContacts();
   const [search, setSearch] = useState('');
   const [selectedTagId, setSelectedTagId] = useState<string | undefined>();
@@ -49,7 +49,8 @@ export default function Contacts() {
       result = result.filter(c => 
         c.email.toLowerCase().includes(s) || 
         c.first_name?.toLowerCase().includes(s) || 
-        c.last_name?.toLowerCase().includes(s)
+        c.last_name?.toLowerCase().includes(s) ||
+        c.phone?.includes(s)
       );
     }
     if (selectedTagId && contactIdsByTag) {
@@ -83,7 +84,7 @@ export default function Contacts() {
   };
 
   return (
-    <DashboardLayout>
+    <SMSLayout>
       <div className="flex h-full">
         {/* Sidebar for Tags & Lists */}
         <div className="w-64 border-r p-4 space-y-6 hidden lg:block">
@@ -225,6 +226,6 @@ export default function Contacts() {
         onOpenChange={setIsAddDialogOpen}
         onSubmit={handleAddContact}
       />
-    </DashboardLayout>
+    </SMSLayout>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import DashboardLayout from '@/components/layout/DashboardLayout';
+import SettingsLayout from '@/components/layout/SettingsLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,7 +61,7 @@ export default function Settings() {
   };
 
   return (
-    <DashboardLayout>
+    <SettingsLayout>
       <div className="space-y-6">
         {/* Header */}
         <div>
@@ -368,6 +368,6 @@ export default function Settings() {
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
+    </SettingsLayout>
   );
 }
