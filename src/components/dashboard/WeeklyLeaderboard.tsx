@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { TABLES } from '@/lib/constants/tables';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -68,7 +69,7 @@ export default function WeeklyLeaderboard() {
 
       // Get SMS counts grouped by user
       let query = supabase
-        .from('sms_logs')
+        .from(TABLES.BROADCAST_SMS_LOGS)
         .select('user_id');
 
       if (startDate && endDate) {

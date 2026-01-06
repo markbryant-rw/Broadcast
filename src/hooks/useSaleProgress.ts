@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { TABLES } from '@/lib/constants/tables';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -31,7 +32,7 @@ export function useSaleProgressMap(saleIds: string[]) {
 
       // Get SMS counts per sale
       const { data: smsLogs, error: smsError } = await supabase
-        .from('sms_logs')
+        .from(TABLES.BROADCAST_SMS_LOGS)
         .select('related_sale_id')
         .in('related_sale_id', saleIds);
 

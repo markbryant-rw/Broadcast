@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { TABLES } from '@/lib/constants/tables';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
@@ -46,7 +47,7 @@ export function useSMSLogs(contactId?: string) {
     queryKey: ['sms-logs', user?.id, contactId],
     queryFn: async () => {
       let query = supabase
-        .from('sms_logs')
+        .from(TABLES.BROADCAST_SMS_LOGS)
         .select(`
           *,
           contacts (
@@ -75,7 +76,7 @@ export function useSMSLogs(contactId?: string) {
       if (!user) throw new Error('Not authenticated');
       
       const { data, error } = await supabase
-        .from('sms_logs')
+        .from(TABLES.BROADCAST_SMS_LOGS)
         .insert({ ...log, user_id: user.id })
         .select()
         .single();
