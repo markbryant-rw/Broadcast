@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { TABLES } from '@/lib/constants/tables';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { NearbySale } from './useNearbySales';
@@ -167,8 +168,9 @@ export function useOpportunitiesForSale(
 
       // Get contacts in the same suburb
       const { data: contacts, error } = await supabase
-        .from('contacts')
-        .select('id, email, first_name, last_name, phone, address, address_suburb, last_sms_at, agentbuddy_customer_id, metadata, latitude, longitude')
+        .from(TABLES.CONTACTS)
+        .select('id, email, first_name, last_name, phone, address, address_suburb, last_sms_at, metadata, latitude, longitude')
+        .eq('user_id', user!.id)
         .ilike('address_suburb', sale.suburb);
 
       if (error) throw error;
@@ -252,7 +254,7 @@ export function useSuburbContactCounts() {
     queryKey: ['suburb-contact-counts', user?.id],
     queryFn: async () => {
       const { data: contacts, error } = await supabase
-        .from('contacts')
+        .from(TABLES.CONTACTS)
         .select('address_suburb')
         .not('address_suburb', 'is', null);
 

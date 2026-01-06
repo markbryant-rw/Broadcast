@@ -8,11 +8,14 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Loader2, CheckCircle2, AlertCircle, Play, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { TABLES } from '@/lib/constants/tables';
 
 interface GeocodingStats {
   sales: { total: number; missing: number };
   contacts: { total: number; missing: number };
 }
+  const { user } = useAuth();
 
 export function BulkGeocoder() {
   const { toast } = useToast();
@@ -28,8 +31,8 @@ export function BulkGeocoder() {
       const [salesTotal, salesMissing, contactsTotal, contactsMissing] = await Promise.all([
         supabase.from('nearby_sales').select('id', { count: 'exact', head: true }),
         supabase.from('nearby_sales').select('id', { count: 'exact', head: true }).is('latitude', null),
-        supabase.from('contacts').select('id', { count: 'exact', head: true }),
-        supabase.from('contacts').select('id', { count: 'exact', head: true }).is('latitude', null),
+        supabase.from(TABLES.CONTACTS.eq('user_id', user?.id)).select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.CONTACTS.eq('user_id', user?.id)).select('id', { count: 'exact', head: true }).is('latitude', null),
       ]);
 
       return {

@@ -99,22 +99,6 @@ export default function BulkSMSComposer({
       .replace(/\{\{contact_address\}\}/gi, contact.address || 'your property');
   }, [sale]);
 
-  const syncToAgentBuddy = async (contact: Opportunity['contact'], processedMessage: string) => {
-    if (!contact.agentbuddy_customer_id) return;
-
-    try {
-      await supabase.functions.invoke('agentbuddy-add-note', {
-        body: {
-          agentbuddy_customer_id: contact.agentbuddy_customer_id,
-          note_content: `SMS sent via Broadcast (bulk): "${processedMessage}"`,
-          related_property_address: sale?.address,
-          note_type: 'sms_sent',
-        },
-      });
-    } catch (err) {
-      console.error('Error syncing to AgentBuddy:', err);
-    }
-  };
 
   const currentOpportunity = queue[currentIndex]?.opportunity;
   const currentProcessedMessage = currentOpportunity 
@@ -157,7 +141,6 @@ export default function BulkSMSComposer({
       });
 
       // Sync to AgentBuddy in background
-      syncToAgentBuddy(contact, currentProcessedMessage);
 
       // Mark as sent
       setQueue(prev => prev.map((item, idx) => 

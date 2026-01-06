@@ -1,4 +1,5 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
+import { TABLES } from '@/lib/constants/tables';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -97,8 +98,9 @@ export function useContactsWithNearbySales() {
     queryFn: async () => {
       // Get contacts with addresses
       const { data: contacts, error: contactsError } = await supabase
-        .from('contacts')
+        .from(TABLES.CONTACTS)
         .select('id, email, first_name, last_name, phone, address, address_suburb')
+        .eq('user_id', user!.id)
         .not('address_suburb', 'is', null);
 
       if (contactsError) throw contactsError;

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { TABLES } from '@/lib/constants/tables';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -49,7 +50,7 @@ export function useHotOpportunities(limit: number = 5) {
 
       // Get contacts in those suburbs that haven't been contacted recently
       const { data: contacts, error: contactsError } = await supabase
-        .from('contacts')
+        .from(TABLES.CONTACTS)
         .select('id, first_name, last_name, address, address_suburb, phone, last_sms_at')
         .eq('user_id', user.id)
         .eq('status', 'active')
