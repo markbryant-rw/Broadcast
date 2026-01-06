@@ -6,10 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const AGENTBUDDY_BASE_URL = "https://mxsefnpxrnamupatgrlb.supabase.co/functions/v1";
-
 interface AddNoteRequest {
-  agentbuddy_customer_id: string;
+  contact_id: string; // Changed from agentbuddy_customer_id
   message_summary: string;
   message_type?: string;
   property_address?: string;
@@ -17,7 +15,7 @@ interface AddNoteRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  console.log("AgentBuddy add-note function called");
+  console.log("AgentBuddy add-note function called (direct DB access)");
 
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -26,7 +24,7 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
     // Get user from authorization header
     const authHeader = req.headers.get("authorization");
@@ -38,7 +36,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser(
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(
       authHeader.replace("Bearer ", "")
     );
 
@@ -50,104 +48,82 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Get AgentBuddy connection with API key
-    const { data: connection, error: connError } = await supabase
-      .from("agentbuddy_connections")
-      .select("api_key")
+    // Get user's team_id from team_members or organization_members
+    const { data: teamMember } = await supabaseAdmin
+      .from("team_members")
+      .select("team_id")
       .eq("user_id", user.id)
       .maybeSingle();
 
-    if (connError) {
-      console.error("Error fetching AgentBuddy connection:", connError);
-      return new Response(
-        JSON.stringify({ error: "Failed to fetch AgentBuddy connection" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (!connection) {
-      console.log("No AgentBuddy connection found for user:", user.id);
-      return new Response(
-        JSON.stringify({ error: "AgentBuddy not connected", code: "NOT_CONNECTED" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const teamId = teamMember?.team_id || null;
 
     // Parse request body
     const body: AddNoteRequest = await req.json();
-    const { 
-      agentbuddy_customer_id, 
-      message_summary, 
+    const {
+      contact_id,
+      message_summary,
       message_type = "nearby_sale_notification",
       property_address,
       external_id,
     } = body;
 
-    if (!agentbuddy_customer_id || !message_summary) {
+    if (!contact_id || !message_summary) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: agentbuddy_customer_id, message_summary" }),
+        JSON.stringify({ error: "Missing required fields: contact_id, message_summary" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`Logging SMS activity for AgentBuddy contact: ${agentbuddy_customer_id}`);
+    console.log(`Creating activity log for contact: ${contact_id}`);
 
-    // Construct the webhook payload per AgentBuddy API spec
-    const webhookPayload = {
-      event: "sms_sent",
-      data: {
-        contactId: agentbuddy_customer_id,
-        propertyAddress: property_address || null,
-        messageType: message_type,
-        messageSummary: message_summary,
-        externalId: external_id || `broadcast-${Date.now()}`,
-      },
-    };
+    // Construct the activity note
+    const activityNote = property_address
+      ? `${message_summary}\n\nProperty: ${property_address}\nType: ${message_type}`
+      : `${message_summary}\nType: ${message_type}`;
 
-    // Call AgentBuddy webhook to log activity
-    const response = await fetch(
-      `${AGENTBUDDY_BASE_URL}/broadcast-webhook`,
-      {
-        method: "POST",
-        headers: {
-          "x-api-key": connection.api_key,
-          "Content-Type": "application/json",
+    // Direct insert to activity_log table
+    const { data, error } = await supabaseAdmin
+      .from("activity_log")
+      .insert({
+        contact_id: contact_id,
+        activity_type: "campaign_interaction",
+        notes: activityNote,
+        created_by: user.id,
+        team_id: teamId,
+        metadata: {
+          message_type,
+          property_address,
+          external_id: external_id || `broadcast-${Date.now()}`,
+          source: "broadcast_sms",
         },
-        body: JSON.stringify(webhookPayload),
-      }
-    );
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`AgentBuddy API error: ${response.status} - ${errorText}`);
-      
-      if (response.status === 401 || response.status === 403) {
+    if (error) {
+      console.error("Error inserting activity log:", error);
+
+      if (error.code === "23503") { // Foreign key violation
         return new Response(
-          JSON.stringify({ error: "AgentBuddy API key is invalid or expired" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      if (response.status === 404) {
-        return new Response(
-          JSON.stringify({ error: "Contact not found in AgentBuddy", code: "CONTACT_NOT_FOUND" }),
+          JSON.stringify({ error: "Contact not found", code: "CONTACT_NOT_FOUND" }),
           { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
       return new Response(
-        JSON.stringify({ error: "Failed to log activity to AgentBuddy", details: errorText }),
-        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Failed to log activity", details: error.message }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const result = await response.json();
-    console.log("Activity logged successfully:", result);
+    console.log("Activity logged successfully:", data.id);
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
-        message: "SMS activity logged to AgentBuddy",
+        message: "SMS activity logged to database",
+        activity_id: data.id,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
