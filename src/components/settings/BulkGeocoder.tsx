@@ -31,8 +31,8 @@ export function BulkGeocoder() {
       const [salesTotal, salesMissing, contactsTotal, contactsMissing] = await Promise.all([
         supabase.from('nearby_sales').select('id', { count: 'exact', head: true }),
         supabase.from('nearby_sales').select('id', { count: 'exact', head: true }).is('latitude', null),
-        supabase.from(TABLES.CONTACTS.eq('user_id', user?.id)).select('id', { count: 'exact', head: true }),
-        supabase.from(TABLES.CONTACTS.eq('user_id', user?.id)).select('id', { count: 'exact', head: true }).is('latitude', null),
+        supabase.from(TABLES.CONTACTS).select('id', { count: 'exact', head: true }).eq('user_id', user?.id),
+        supabase.from(TABLES.CONTACTS).select('id', { count: 'exact', head: true }).eq('user_id', user?.id).is('latitude', null),
       ]);
 
       return {
@@ -67,8 +67,9 @@ export function BulkGeocoder() {
 
       // Fetch contacts missing coordinates
       const { data: contactsData } = await supabase
-        .from('contacts')
+        .from(TABLES.CONTACTS)
         .select('id, address, address_suburb, address_city')
+        .eq('user_id', user?.id)
         .is('latitude', null)
         .not('address', 'is', null)
         .limit(100);
@@ -154,13 +155,14 @@ export function BulkGeocoder() {
             const location = data.results[0].geometry.location;
             
             await supabase
-              .from('contacts')
+              .from(TABLES.CONTACTS)
               .update({
                 latitude: location.lat,
                 longitude: location.lng,
                 geocoded_at: new Date().toISOString(),
               })
-              .eq('id', contact.id);
+              .eq('id', contact.id)
+              .eq('user_id', user?.id);
 
             successCount++;
           } else {
