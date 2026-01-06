@@ -15,9 +15,9 @@ interface GeocodingStats {
   sales: { total: number; missing: number };
   contacts: { total: number; missing: number };
 }
-  const { user } = useAuth();
 
 export function BulkGeocoder() {
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isRunning, setIsRunning] = useState(false);
