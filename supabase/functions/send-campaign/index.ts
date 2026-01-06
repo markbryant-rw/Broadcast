@@ -47,7 +47,7 @@ serve(async (req: Request): Promise<Response> => {
 
     // Get campaign details
     const { data: campaign, error: campaignError } = await supabase
-      .from("campaigns")
+      .from("broadcast_campaigns")
       .select("*")
       .eq("id", campaignId)
       .single();
@@ -151,13 +151,13 @@ serve(async (req: Request): Promise<Response> => {
 
     // Update campaign status to sending
     await supabase
-      .from("campaigns")
+      .from("broadcast_campaigns")
       .update({ status: "sending" })
       .eq("id", campaignId);
 
     // Create campaign analytics record
     await supabaseAdmin
-      .from("campaign_analytics")
+      .from("broadcast_campaign_analytics")
       .upsert({
         campaign_id: campaignId,
         total_recipients: uniqueRecipients.length,
@@ -176,7 +176,7 @@ serve(async (req: Request): Promise<Response> => {
     }));
     
     await supabaseAdmin
-      .from("campaign_recipients")
+      .from("broadcast_campaign_recipients")
       .upsert(recipientRecords, { onConflict: "campaign_id,contact_id", ignoreDuplicates: true });
 
     // Get email content
@@ -237,7 +237,7 @@ serve(async (req: Request): Promise<Response> => {
         console.log(`Email sent to ${recipient.email}, ID: ${emailData?.id}`);
 
         // Record sent event
-        await supabaseAdmin.from("email_events").insert({
+        await supabaseAdmin.from("broadcast_email_events").insert({
           campaign_id: campaignId,
           contact_id: recipient.id,
           event_type: "sent",
@@ -246,7 +246,7 @@ serve(async (req: Request): Promise<Response> => {
 
         // Update recipient record
         await supabaseAdmin
-          .from("campaign_recipients")
+          .from("broadcast_campaign_recipients")
           .update({ sent_at: new Date().toISOString() })
           .eq("campaign_id", campaignId)
           .eq("contact_id", recipient.id);
@@ -260,13 +260,13 @@ serve(async (req: Request): Promise<Response> => {
 
     // Update campaign analytics
     await supabaseAdmin
-      .from("campaign_analytics")
+      .from("broadcast_campaign_analytics")
       .update({ sent_count: sentCount })
       .eq("campaign_id", campaignId);
 
     // Update campaign status
     await supabase
-      .from("campaigns")
+      .from("broadcast_campaigns")
       .update({ 
         status: "sent",
         sent_at: new Date().toISOString(),

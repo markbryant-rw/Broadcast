@@ -68,7 +68,7 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // Record the event
-    const { error: eventError } = await supabase.from("email_events").insert({
+    const { error: eventError } = await supabase.from("broadcast_email_events").insert({
       campaign_id: campaignId,
       contact_id: contactId,
       event_type: eventType,
@@ -88,7 +88,7 @@ serve(async (req: Request): Promise<Response> => {
 
     if (timestampField[eventType]) {
       await supabase
-        .from("campaign_recipients")
+        .from("broadcast_campaign_recipients")
         .update({ [timestampField[eventType]]: new Date().toISOString() })
         .eq("campaign_id", campaignId)
         .eq("contact_id", contactId);
@@ -105,7 +105,7 @@ serve(async (req: Request): Promise<Response> => {
     if (analyticsFieldMap[eventType]) {
       // Get current count and increment
       const { data: analytics } = await supabase
-        .from("campaign_analytics")
+        .from("broadcast_campaign_analytics")
         .select(analyticsFieldMap[eventType])
         .eq("campaign_id", campaignId)
         .single();
@@ -113,7 +113,7 @@ serve(async (req: Request): Promise<Response> => {
       if (analytics) {
         const currentCount = (analytics as any)[analyticsFieldMap[eventType]] || 0;
         await supabase
-          .from("campaign_analytics")
+          .from("broadcast_campaign_analytics")
           .update({ [analyticsFieldMap[eventType]]: currentCount + 1 })
           .eq("campaign_id", campaignId);
       }

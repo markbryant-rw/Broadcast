@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { TABLES } from '@/lib/constants/tables';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
@@ -31,7 +32,7 @@ export function useSMSTemplates() {
     queryKey: ['sms-templates', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('sms_templates')
+        .from(TABLES.BROADCAST_SMS_TEMPLATES)
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -41,7 +42,7 @@ export function useSMSTemplates() {
       const hasNearbySaleTemplate = data?.some(t => t.category === 'nearby_sale');
       if (!hasNearbySaleTemplate && user) {
         const { data: newTemplate, error: insertError } = await supabase
-          .from('sms_templates')
+          .from(TABLES.BROADCAST_SMS_TEMPLATES)
           .insert({
             ...DEFAULT_TEMPLATE,
             user_id: user.id,
@@ -65,7 +66,7 @@ export function useSMSTemplates() {
       if (!user) throw new Error('Not authenticated');
       
       const { data, error } = await supabase
-        .from('sms_templates')
+        .from(TABLES.BROADCAST_SMS_TEMPLATES)
         .insert({ ...template, user_id: user.id })
         .select()
         .single();
@@ -85,7 +86,7 @@ export function useSMSTemplates() {
   const updateTemplate = useMutation({
     mutationFn: async ({ id, ...updates }: SMSTemplateUpdate) => {
       const { data, error } = await supabase
-        .from('sms_templates')
+        .from(TABLES.BROADCAST_SMS_TEMPLATES)
         .update(updates)
         .eq('id', id)
         .select()
@@ -106,7 +107,7 @@ export function useSMSTemplates() {
   const deleteTemplate = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('sms_templates')
+        .from(TABLES.BROADCAST_SMS_TEMPLATES)
         .delete()
         .eq('id', id);
 

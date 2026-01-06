@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { TABLES } from '@/lib/constants/tables';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "sonner";
@@ -217,7 +218,7 @@ export const useTemplates = () => {
     queryKey: ["emailTemplates", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("email_templates")
+        .from(TABLES.BROADCAST_EMAIL_TEMPLATES)
         .select("*")
         .order("created_at", { ascending: false });
 
@@ -235,7 +236,7 @@ export const useTemplates = () => {
       html?: string;
     }) => {
       const { data, error } = await supabase
-        .from("email_templates")
+        .from(TABLES.BROADCAST_EMAIL_TEMPLATES)
         .insert({
           name: template.name,
           subject: template.subject || null,
@@ -270,7 +271,7 @@ export const useTemplates = () => {
       html?: string;
     }) => {
       const { data, error } = await supabase
-        .from("email_templates")
+        .from(TABLES.BROADCAST_EMAIL_TEMPLATES)
         .update(updates)
         .eq("id", id)
         .select()
@@ -291,7 +292,7 @@ export const useTemplates = () => {
   const deleteTemplate = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from("email_templates")
+        .from(TABLES.BROADCAST_EMAIL_TEMPLATES)
         .delete()
         .eq("id", id);
 

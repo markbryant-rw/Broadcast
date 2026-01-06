@@ -1,4 +1,5 @@
 import { MessageSquare, Clock, TrendingUp, Mail, Flame, Zap, Coffee, Award, Trophy } from 'lucide-react';
+import { TABLES } from '@/lib/constants/tables';
 import { useSMSLogs } from '@/hooks/useSMSLogs';
 import { formatDistanceToNow, differenceInDays, startOfDay, isEqual, subDays } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
@@ -32,7 +33,7 @@ export default function ActivityWidget() {
     queryKey: ['activity-email-stats'],
     queryFn: async () => {
       const { data: analytics, error } = await supabase
-        .from('campaign_analytics')
+        .from(TABLES.BROADCAST_CAMPAIGN_ANALYTICS)
         .select('opened_count, total_recipients');
       
       if (error || !analytics || analytics.length === 0) return null;

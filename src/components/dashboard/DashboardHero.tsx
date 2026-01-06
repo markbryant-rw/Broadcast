@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { TABLES } from '@/lib/constants/tables';
 import { MessageSquare, Mail, ArrowRight, Flame, Home, Send, BarChart3, Clock } from 'lucide-react';
 import { useHotOpportunities } from '@/hooks/useHotOpportunities';
 import { useNearbySales } from '@/hooks/useNearbySales';
@@ -42,7 +43,7 @@ export default function DashboardHero() {
     queryKey: ['campaign-avg-open-rate'],
     queryFn: async () => {
       const { data: analytics, error } = await supabase
-        .from('campaign_analytics')
+        .from(TABLES.BROADCAST_CAMPAIGN_ANALYTICS)
         .select('opened_count, total_recipients');
       
       if (error || !analytics || analytics.length === 0) return null;

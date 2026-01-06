@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { TABLES } from '@/lib/constants/tables';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -39,7 +40,7 @@ export function useAnalytics() {
     queryKey: ['analytics-summary', user?.id],
     queryFn: async (): Promise<AnalyticsSummary> => {
       const { data, error } = await supabase
-        .from('campaign_analytics')
+        .from(TABLES.BROADCAST_CAMPAIGN_ANALYTICS)
         .select(`
           sent_count,
           delivered_count,
@@ -85,7 +86,7 @@ export function useAnalytics() {
     queryKey: ['analytics-campaigns', user?.id],
     queryFn: async (): Promise<CampaignPerformance[]> => {
       const { data: campaigns, error: campaignsError } = await supabase
-        .from('campaigns')
+        .from(TABLES.BROADCAST_CAMPAIGNS)
         .select('id, name, sent_at, status')
         .eq('status', 'sent')
         .order('sent_at', { ascending: false })
@@ -98,7 +99,7 @@ export function useAnalytics() {
       if (campaignIds.length === 0) return [];
 
       const { data: analytics, error: analyticsError } = await supabase
-        .from('campaign_analytics')
+        .from(TABLES.BROADCAST_CAMPAIGN_ANALYTICS)
         .select('*')
         .in('campaign_id', campaignIds);
 
@@ -135,7 +136,7 @@ export function useAnalytics() {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
       const { data, error } = await supabase
-        .from('email_events')
+        .from(TABLES.BROADCAST_EMAIL_EVENTS)
         .select(`
           event_type,
           created_at,

@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { TABLES } from '@/lib/constants/tables';
 
 type Campaign = Tables<'campaigns'>;
 type CampaignInsert = TablesInsert<'campaigns'>;
@@ -16,7 +17,7 @@ export function useCampaigns() {
     queryKey: ['campaigns', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('campaigns')
+        .from(TABLES.BROADCAST_CAMPAIGNS)
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -29,9 +30,9 @@ export function useCampaigns() {
   const addCampaign = useMutation({
     mutationFn: async (campaign: Omit<CampaignInsert, 'user_id'>) => {
       if (!user) throw new Error('Not authenticated');
-      
+
       const { data, error } = await supabase
-        .from('campaigns')
+        .from(TABLES.BROADCAST_CAMPAIGNS)
         .insert({ ...campaign, user_id: user.id })
         .select()
         .single();
@@ -51,7 +52,7 @@ export function useCampaigns() {
   const updateCampaign = useMutation({
     mutationFn: async ({ id, ...updates }: CampaignUpdate & { id: string }) => {
       const { data, error } = await supabase
-        .from('campaigns')
+        .from(TABLES.BROADCAST_CAMPAIGNS)
         .update(updates)
         .eq('id', id)
         .select()
@@ -72,7 +73,7 @@ export function useCampaigns() {
   const deleteCampaign = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('campaigns')
+        .from(TABLES.BROADCAST_CAMPAIGNS)
         .delete()
         .eq('id', id);
 
@@ -90,9 +91,9 @@ export function useCampaigns() {
   const scheduleCampaign = useMutation({
     mutationFn: async ({ id, scheduledAt, timezone }: { id: string; scheduledAt: string; timezone: string }) => {
       const { data, error } = await supabase
-        .from('campaigns')
-        .update({ 
-          scheduled_at: scheduledAt, 
+        .from(TABLES.BROADCAST_CAMPAIGNS)
+        .update({
+          scheduled_at: scheduledAt,
           status: 'scheduled',
           content: supabase.rpc ? undefined : undefined, // We'll store timezone in a separate approach
         })
@@ -115,9 +116,9 @@ export function useCampaigns() {
   const cancelSchedule = useMutation({
     mutationFn: async (id: string) => {
       const { data, error } = await supabase
-        .from('campaigns')
-        .update({ 
-          scheduled_at: null, 
+        .from(TABLES.BROADCAST_CAMPAIGNS)
+        .update({
+          scheduled_at: null,
           status: 'draft',
         })
         .eq('id', id)

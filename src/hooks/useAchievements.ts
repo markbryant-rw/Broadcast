@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { TABLES } from '@/lib/constants/tables';
 import { supabase } from '@/integrations/supabase/client';
 import { useSMSLogs } from './useSMSLogs';
 import { useContacts } from './useContacts';
@@ -80,13 +81,13 @@ export function useAchievements() {
       if (!user) return { count: 0, avgOpenRate: 0 };
 
       const { data: campaigns } = await supabase
-        .from('campaigns')
+        .from(TABLES.BROADCAST_CAMPAIGNS)
         .select('id')
         .eq('user_id', user.id)
         .eq('status', 'sent');
 
       const { data: analytics } = await supabase
-        .from('campaign_analytics')
+        .from(TABLES.BROADCAST_CAMPAIGN_ANALYTICS)
         .select('opened_count, sent_count');
 
       const totalSent = analytics?.reduce((sum, a) => sum + (a.sent_count || 0), 0) || 0;
