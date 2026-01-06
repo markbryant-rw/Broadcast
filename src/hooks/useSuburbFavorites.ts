@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { TABLES } from '@/lib/constants/tables';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
@@ -80,8 +81,9 @@ export function useFavoriteSuburbsWithCounts() {
           
           // Get contact count (opportunities) in this suburb
           const { count: contactCount } = await supabase
-            .from('contacts')
+            .from(TABLES.CONTACTS)
             .select('*', { count: 'exact', head: true })
+            .eq('user_id', user!.id)
             .ilike('address_suburb', fav.suburb);
           
           // Get contacted/ignored actions count for this suburb

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { TABLES } from '@/lib/constants/tables';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { useAuth } from './useAuth';
@@ -16,8 +17,9 @@ export function useContacts() {
     queryKey: ['contacts', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('contacts')
+        .from(TABLES.CONTACTS)
         .select('*')
+        .eq('user_id', user!.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -29,9 +31,9 @@ export function useContacts() {
   const addContact = useMutation({
     mutationFn: async (contact: Omit<ContactInsert, 'user_id'>) => {
       if (!user) throw new Error('Not authenticated');
-      
+
       const { data, error } = await supabase
-        .from('contacts')
+        .from(TABLES.CONTACTS)
         .insert({ ...contact, user_id: user.id })
         .select()
         .single();
@@ -51,7 +53,7 @@ export function useContacts() {
   const updateContact = useMutation({
     mutationFn: async ({ id, ...updates }: ContactUpdate & { id: string }) => {
       const { data, error } = await supabase
-        .from('contacts')
+        .from(TABLES.CONTACTS)
         .update(updates)
         .eq('id', id)
         .select()
@@ -72,7 +74,7 @@ export function useContacts() {
   const deleteContact = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('contacts')
+        .from(TABLES.CONTACTS)
         .delete()
         .eq('id', id);
 

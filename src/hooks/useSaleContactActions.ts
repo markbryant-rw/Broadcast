@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { TABLES } from '@/lib/constants/tables';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
@@ -118,8 +119,9 @@ export function useMarkSaleComplete() {
 
       // Step 2: Also mark any existing contacts as ignored (existing behavior)
       const { data: contacts, error: contactsError } = await supabase
-        .from('contacts')
+        .from(TABLES.CONTACTS)
         .select('id')
+        .eq('user_id', user!.id)
         .ilike('address_suburb', suburb);
 
       if (contactsError) throw contactsError;

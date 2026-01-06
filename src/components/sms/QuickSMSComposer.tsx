@@ -81,40 +81,6 @@ export default function QuickSMSComposer({
   const characterCount = processedMessage.length;
   const isOverLimit = characterCount > MAX_SMS_LENGTH;
 
-  const syncToAgentBuddy = async (contact: typeof opportunity.contact) => {
-    // Only sync if contact has an AgentBuddy ID
-    if (!contact.agentbuddy_customer_id) {
-      console.log('Contact not linked to AgentBuddy, skipping sync');
-      return;
-    }
-
-    try {
-      console.log('Syncing SMS to AgentBuddy for contact:', contact.agentbuddy_customer_id);
-      
-      const { data, error } = await supabase.functions.invoke('agentbuddy-add-note', {
-        body: {
-          agentbuddy_customer_id: contact.agentbuddy_customer_id,
-          note_content: `SMS sent via Broadcast: "${processedMessage}"`,
-          related_property_address: sale?.address,
-          note_type: 'sms_sent',
-        },
-      });
-
-      if (error) {
-        console.error('Failed to sync to AgentBuddy:', error);
-        // Don't show error toast - this is a background operation
-        return;
-      }
-
-      if (data?.success) {
-        toast.success('SMS logged to AgentBuddy', { duration: 2000 });
-      } else if (data?.code === 'NOT_CONNECTED') {
-        console.log('AgentBuddy not connected, skipping sync');
-      }
-    } catch (err) {
-      console.error('Error syncing to AgentBuddy:', err);
-    }
-  };
 
   const handleSend = async () => {
     if (!opportunity || !sale) return;
@@ -140,7 +106,6 @@ export default function QuickSMSComposer({
       });
 
       // Sync to AgentBuddy in background (don't await)
-      syncToAgentBuddy(contact);
 
       // Open native SMS app
       const smsUrl = `sms:${contact.phone}?body=${encodeURIComponent(processedMessage)}`;

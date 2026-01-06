@@ -99,7 +99,7 @@ serve(async (req: Request): Promise<Response> => {
       const { data, error } = await supabase
         .from("contacts")
         .select("id, email, first_name")
-        .eq("status", "active");
+        .eq("organization_id", campaign.organization_id).eq("status", "active");
       if (error) throw error;
       recipients = data || [];
     } else if (recipientType === 'lists' && listIds?.length) {
@@ -133,7 +133,7 @@ serve(async (req: Request): Promise<Response> => {
         .from("contacts")
         .select("id, email, first_name")
         .in("id", contactIds)
-        .eq("status", "active");
+        .eq("organization_id", campaign.organization_id).eq("status", "active");
       if (error) throw error;
       recipients = data || [];
     }
