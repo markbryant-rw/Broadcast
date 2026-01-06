@@ -104,7 +104,7 @@ serve(async (req: Request): Promise<Response> => {
       recipients = data || [];
     } else if (recipientType === 'lists' && listIds?.length) {
       const { data: memberData, error } = await supabase
-        .from("contact_list_members")
+        .from("broadcast_contact_list_members")
         .select("contact_id, contacts(id, email, first_name, status)")
         .in("list_id", listIds);
       if (error) throw error;
@@ -117,7 +117,7 @@ serve(async (req: Request): Promise<Response> => {
         }));
     } else if (recipientType === 'tags' && tagIds?.length) {
       const { data: tagData, error } = await supabase
-        .from("contact_tags")
+        .from("broadcast_contact_tags")
         .select("contact_id, contacts(id, email, first_name, status)")
         .in("tag_id", tagIds);
       if (error) throw error;

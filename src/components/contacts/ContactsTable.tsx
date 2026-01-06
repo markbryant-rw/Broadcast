@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { TABLES } from '@/lib/constants/tables';
 import { format } from 'date-fns';
 import { MoreHorizontal, Tag as TagIcon, MessageSquare, Phone } from 'lucide-react';
 import { Tables } from '@/integrations/supabase/types';
@@ -56,7 +57,7 @@ export default function ContactsTable({
       if (contacts.length === 0) return;
       const contactIds = contacts.map(c => c.id);
       const { data } = await supabase
-        .from('contact_tags')
+        .from(TABLES.BROADCAST_CONTACT_TAGS)
         .select('contact_id, tags(*)')
         .in('contact_id', contactIds);
 
