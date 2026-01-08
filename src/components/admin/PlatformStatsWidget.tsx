@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { TABLES } from '@/lib/constants/tables';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,7 +34,7 @@ export default function PlatformStatsWidget() {
         supabase.from("organizations").select("id", { count: "exact", head: true }),
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("verified_domains").select("id, verified_at"),
-        supabase.from(TABLES.BROADCAST_CAMPAIGNS).select("id, status"),
+        supabase.from("campaigns").select("id, status"),
       ]);
 
       const verifiedDomains = domainsResult.data?.filter(d => d.verified_at).length || 0;

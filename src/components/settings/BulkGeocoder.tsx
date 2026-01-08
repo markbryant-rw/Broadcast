@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { MapPin, Loader2, CheckCircle2, AlertCircle, Play, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { TABLES } from '@/lib/constants/tables';
 
 interface GeocodingStats {
   sales: { total: number; missing: number };
@@ -31,8 +30,8 @@ export function BulkGeocoder() {
       const [salesTotal, salesMissing, contactsTotal, contactsMissing] = await Promise.all([
         supabase.from('nearby_sales').select('id', { count: 'exact', head: true }),
         supabase.from('nearby_sales').select('id', { count: 'exact', head: true }).is('latitude', null),
-        supabase.from(TABLES.CONTACTS).select('id', { count: 'exact', head: true }).eq('user_id', user?.id),
-        supabase.from(TABLES.CONTACTS).select('id', { count: 'exact', head: true }).eq('user_id', user?.id).is('latitude', null),
+        supabase.from('contacts').select('id', { count: 'exact', head: true }).eq('user_id', user?.id),
+        supabase.from('contacts').select('id', { count: 'exact', head: true }).eq('user_id', user?.id).is('latitude', null),
       ]);
 
       return {
@@ -67,7 +66,7 @@ export function BulkGeocoder() {
 
       // Fetch contacts missing coordinates
       const { data: contactsData } = await supabase
-        .from(TABLES.CONTACTS)
+        .from('contacts')
         .select('id, address, address_suburb, address_city')
         .eq('user_id', user?.id)
         .is('latitude', null)
@@ -155,7 +154,7 @@ export function BulkGeocoder() {
             const location = data.results[0].geometry.location;
             
             await supabase
-              .from(TABLES.CONTACTS)
+              .from('contacts')
               .update({
                 latitude: location.lat,
                 longitude: location.lng,
