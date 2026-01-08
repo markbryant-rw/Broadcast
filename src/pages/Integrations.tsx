@@ -14,9 +14,6 @@ export default function Integrations() {
     isConnected, 
     connection, 
     isLoading, 
-    connect, 
-    disconnect, 
-    sync 
   } = useAgentBuddy();
 
   const [apiKey, setApiKey] = useState('');
@@ -41,21 +38,15 @@ export default function Integrations() {
   ];
 
   const handleConnect = async (id: string) => {
-    if (id === 'agentbuddy') {
-      connect.mutate(apiKey, {
-        onSuccess: () => setApiKey(''),
-      });
-    }
+    // Connection is handled automatically via shared database
   };
 
   const handleDisconnect = async (id: string) => {
-    if (id === 'agentbuddy') {
-      disconnect.mutate();
-    }
+    // Disconnection is not needed with shared database
   };
 
   const handleSync = () => {
-    sync.mutate();
+    // Syncing is not needed with shared database
   };
 
   return (
@@ -115,13 +106,9 @@ export default function Integrations() {
                           variant="outline" 
                           size="sm"
                           onClick={handleSync}
-                          disabled={sync.isPending}
+                          disabled
                         >
-                          {sync.isPending ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          ) : (
-                            <RefreshCw className="h-4 w-4 mr-2" />
-                          )}
+                          <RefreshCw className="h-4 w-4 mr-2" />
                           Sync Contacts
                         </Button>
                       )}
@@ -130,11 +117,8 @@ export default function Integrations() {
                         size="sm" 
                         className="text-destructive"
                         onClick={() => handleDisconnect(integration.id)}
-                        disabled={disconnect.isPending}
+                        disabled
                       >
-                        {disconnect.isPending ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : null}
                         Disconnect
                       </Button>
                     </div>
@@ -169,13 +153,9 @@ export default function Integrations() {
                         <Button
                           className="gradient-primary"
                           onClick={() => handleConnect(integration.id)}
-                          disabled={!apiKey.trim() || connect.isPending}
+                          disabled={!apiKey.trim()}
                         >
-                          {connect.isPending ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          ) : (
-                            <Link2 className="h-4 w-4 mr-2" />
-                          )}
+                          <Link2 className="h-4 w-4 mr-2" />
                           Connect
                         </Button>
                       </div>

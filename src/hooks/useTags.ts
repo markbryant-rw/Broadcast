@@ -17,7 +17,7 @@ export function useTags() {
     queryKey: ['tags', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from(TABLES.BROADCAST_TAGS)
+        .from(TABLES.TAGS)
         .select('*')
         .order('name', { ascending: true });
 
@@ -32,7 +32,7 @@ export function useTags() {
       if (!user) throw new Error('Not authenticated');
       
       const { data, error } = await supabase
-        .from(TABLES.BROADCAST_TAGS)
+        .from(TABLES.TAGS)
         .insert({ ...tag, user_id: user.id })
         .select()
         .single();
@@ -52,7 +52,7 @@ export function useTags() {
   const updateTag = useMutation({
     mutationFn: async ({ id, ...updates }: TagUpdate & { id: string }) => {
       const { data, error } = await supabase
-        .from(TABLES.BROADCAST_TAGS)
+        .from(TABLES.TAGS)
         .update(updates)
         .eq('id', id)
         .select()
@@ -73,7 +73,7 @@ export function useTags() {
   const deleteTag = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from(TABLES.BROADCAST_TAGS)
+        .from(TABLES.TAGS)
         .delete()
         .eq('id', id);
 
@@ -91,7 +91,7 @@ export function useTags() {
   const assignTagToContact = useMutation({
     mutationFn: async ({ contactId, tagId }: { contactId: string; tagId: string }) => {
       const { data, error } = await supabase
-        .from(TABLES.BROADCAST_CONTACT_TAGS)
+        .from(TABLES.CONTACT_TAGS)
         .insert({ contact_id: contactId, tag_id: tagId })
         .select()
         .single();
@@ -111,7 +111,7 @@ export function useTags() {
   const removeTagFromContact = useMutation({
     mutationFn: async ({ contactId, tagId }: { contactId: string; tagId: string }) => {
       const { error } = await supabase
-        .from(TABLES.BROADCAST_CONTACT_TAGS)
+        .from(TABLES.CONTACT_TAGS)
         .delete()
         .eq('contact_id', contactId)
         .eq('tag_id', tagId);

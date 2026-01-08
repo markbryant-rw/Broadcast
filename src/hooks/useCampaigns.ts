@@ -17,7 +17,7 @@ export function useCampaigns() {
     queryKey: ['campaigns', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from(TABLES.BROADCAST_CAMPAIGNS)
+        .from(TABLES.CAMPAIGNS)
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -32,7 +32,7 @@ export function useCampaigns() {
       if (!user) throw new Error('Not authenticated');
 
       const { data, error } = await supabase
-        .from(TABLES.BROADCAST_CAMPAIGNS)
+        .from(TABLES.CAMPAIGNS)
         .insert({ ...campaign, user_id: user.id })
         .select()
         .single();
@@ -52,7 +52,7 @@ export function useCampaigns() {
   const updateCampaign = useMutation({
     mutationFn: async ({ id, ...updates }: CampaignUpdate & { id: string }) => {
       const { data, error } = await supabase
-        .from(TABLES.BROADCAST_CAMPAIGNS)
+        .from(TABLES.CAMPAIGNS)
         .update(updates)
         .eq('id', id)
         .select()
@@ -73,7 +73,7 @@ export function useCampaigns() {
   const deleteCampaign = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from(TABLES.BROADCAST_CAMPAIGNS)
+        .from(TABLES.CAMPAIGNS)
         .delete()
         .eq('id', id);
 
@@ -91,7 +91,7 @@ export function useCampaigns() {
   const scheduleCampaign = useMutation({
     mutationFn: async ({ id, scheduledAt, timezone }: { id: string; scheduledAt: string; timezone: string }) => {
       const { data, error } = await supabase
-        .from(TABLES.BROADCAST_CAMPAIGNS)
+        .from(TABLES.CAMPAIGNS)
         .update({
           scheduled_at: scheduledAt,
           status: 'scheduled',
@@ -116,7 +116,7 @@ export function useCampaigns() {
   const cancelSchedule = useMutation({
     mutationFn: async (id: string) => {
       const { data, error } = await supabase
-        .from(TABLES.BROADCAST_CAMPAIGNS)
+        .from(TABLES.CAMPAIGNS)
         .update({
           scheduled_at: null,
           status: 'draft',

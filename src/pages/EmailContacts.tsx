@@ -27,7 +27,7 @@ export default function EmailContacts() {
     queryKey: ['contact_ids_by_tag', selectedTagId],
     queryFn: async () => {
       if (!selectedTagId) return null;
-      const { data } = await supabase.from(TABLES.BROADCAST_CONTACT_TAGS).select('contact_id').eq('tag_id', selectedTagId);
+      const { data } = await supabase.from(TABLES.CONTACT_TAGS).select('contact_id').eq('tag_id', selectedTagId);
       return data?.map(d => d.contact_id) || [];
     },
     enabled: !!selectedTagId,
@@ -37,7 +37,7 @@ export default function EmailContacts() {
     queryKey: ['contact_ids_by_list', selectedListId],
     queryFn: async () => {
       if (!selectedListId) return null;
-      const { data } = await supabase.from(TABLES.BROADCAST_CONTACT_LIST_MEMBERS).select('contact_id').eq('list_id', selectedListId);
+      const { data } = await supabase.from(TABLES.CONTACT_LIST_MEMBERS).select('contact_id').eq('list_id', selectedListId);
       return data?.map(d => d.contact_id) || [];
     },
     enabled: !!selectedListId,
