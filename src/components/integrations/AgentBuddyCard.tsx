@@ -1,23 +1,11 @@
-import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useAgentBuddy } from '@/hooks/useAgentBuddy';
-import { Users, RefreshCw, Link2, Unlink, Eye, EyeOff, ExternalLink } from 'lucide-react';
+import { Users, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
 export function AgentBuddyCard() {
-  const { isConnected, connection, isLoading, connect, disconnect, sync } = useAgentBuddy();
-  const [apiKey, setApiKey] = useState('');
-  const [showKey, setShowKey] = useState(false);
-
-  const handleConnect = () => {
-    connect.mutate(apiKey, {
-      onSuccess: () => setApiKey(''),
-    });
-  };
+  const { isConnected, connection, isLoading } = useAgentBuddy();
 
   return (
     <Card>
@@ -29,7 +17,7 @@ export function AgentBuddyCard() {
             </div>
             <div>
               <CardTitle className="text-lg">AgentBuddy</CardTitle>
-              <CardDescription>Sync contacts and log SMS activity</CardDescription>
+              <CardDescription>Shared database integration</CardDescription>
             </div>
           </div>
           <Badge variant={isConnected ? 'default' : 'secondary'}>
@@ -40,94 +28,22 @@ export function AgentBuddyCard() {
       <CardContent className="space-y-4">
         {isLoading ? (
           <div className="flex items-center gap-2 text-muted-foreground">
-            <RefreshCw className="h-4 w-4 animate-spin" />
             <span>Checking connection...</span>
           </div>
         ) : isConnected ? (
-          <>
-            {connection?.connected_at && (
-              <p className="text-sm text-muted-foreground">
-                Connected on {format(new Date(connection.connected_at), 'PPp')}
-              </p>
-            )}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => sync.mutate()}
-                disabled={sync.isPending}
-              >
-                {sync.isPending ? (
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                )}
-                Sync Contacts
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => disconnect.mutate()}
-                disabled={disconnect.isPending}
-              >
-                <Unlink className="mr-2 h-4 w-4" />
-                Disconnect
-              </Button>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-green-600">
+              <CheckCircle className="h-4 w-4" />
+              <span className="text-sm font-medium">Using shared AgentBuddy database</span>
             </div>
-          </>
-        ) : (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="api-key">API Key</Label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Input
-                    id="api-key"
-                    type={showKey ? 'text' : 'password'}
-                    placeholder="Paste your AgentBuddy API key"
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                    onClick={() => setShowKey(!showKey)}
-                  >
-                    {showKey ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </Button>
-                </div>
-                <Button
-                  onClick={handleConnect}
-                  disabled={!apiKey.trim() || connect.isPending}
-                >
-                  {connect.isPending ? (
-                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Link2 className="mr-2 h-4 w-4" />
-                  )}
-                  Connect
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Generate an API key from{' '}
-                <a
-                  href="https://app.agentbuddy.io/settings/integrations"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline inline-flex items-center gap-1"
-                >
-                  AgentBuddy Settings
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </p>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              Broadcast is connected to the AgentBuddy ecosystem. Contacts, sales data, and SMS logs are shared across platforms.
+            </p>
           </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            AgentBuddy integration is not configured.
+          </p>
         )}
       </CardContent>
     </Card>
