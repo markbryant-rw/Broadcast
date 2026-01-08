@@ -21,7 +21,7 @@ export function useContactLists() {
     queryKey: ['contact_lists', user?.id],
     queryFn: async () => {
       const { data: lists, error: listsError } = await supabase
-        .from(TABLES.BROADCAST_CONTACT_LISTS)
+        .from(TABLES.CONTACT_LISTS)
         .select('*')
         .order('name', { ascending: true });
 
@@ -31,7 +31,7 @@ export function useContactLists() {
       const listsWithCounts = await Promise.all(
         (lists || []).map(async (list) => {
           const { count, error: countError } = await supabase
-            .from(TABLES.BROADCAST_CONTACT_LIST_MEMBERS)
+            .from(TABLES.CONTACT_LIST_MEMBERS)
             .select('*', { count: 'exact', head: true })
             .eq('list_id', list.id);
 
@@ -52,7 +52,7 @@ export function useContactLists() {
       if (!user) throw new Error('Not authenticated');
       
       const { data, error } = await supabase
-        .from(TABLES.BROADCAST_CONTACT_LISTS)
+        .from(TABLES.CONTACT_LISTS)
         .insert({ ...list, user_id: user.id })
         .select()
         .single();
@@ -72,7 +72,7 @@ export function useContactLists() {
   const updateList = useMutation({
     mutationFn: async ({ id, ...updates }: ContactListUpdate & { id: string }) => {
       const { data, error } = await supabase
-        .from(TABLES.BROADCAST_CONTACT_LISTS)
+        .from(TABLES.CONTACT_LISTS)
         .update(updates)
         .eq('id', id)
         .select()
@@ -93,7 +93,7 @@ export function useContactLists() {
   const deleteList = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from(TABLES.BROADCAST_CONTACT_LISTS)
+        .from(TABLES.CONTACT_LISTS)
         .delete()
         .eq('id', id);
 
@@ -111,7 +111,7 @@ export function useContactLists() {
   const addContactToList = useMutation({
     mutationFn: async ({ contactId, listId }: { contactId: string; listId: string }) => {
       const { data, error } = await supabase
-        .from(TABLES.BROADCAST_CONTACT_LIST_MEMBERS)
+        .from(TABLES.CONTACT_LIST_MEMBERS)
         .insert({ contact_id: contactId, list_id: listId })
         .select()
         .single();
@@ -131,7 +131,7 @@ export function useContactLists() {
   const removeContactFromList = useMutation({
     mutationFn: async ({ contactId, listId }: { contactId: string; listId: string }) => {
       const { error } = await supabase
-        .from(TABLES.BROADCAST_CONTACT_LIST_MEMBERS)
+        .from(TABLES.CONTACT_LIST_MEMBERS)
         .delete()
         .eq('contact_id', contactId)
         .eq('list_id', listId);
@@ -155,7 +155,7 @@ export function useContactLists() {
       }));
 
       const { error } = await supabase
-        .from(TABLES.BROADCAST_CONTACT_LIST_MEMBERS)
+        .from(TABLES.CONTACT_LIST_MEMBERS)
         .upsert(inserts, { onConflict: 'contact_id,list_id', ignoreDuplicates: true });
 
       if (error) throw error;

@@ -218,7 +218,7 @@ export const useTemplates = () => {
     queryKey: ["emailTemplates", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from(TABLES.BROADCAST_EMAIL_TEMPLATES)
+        .from(TABLES.EMAIL_TEMPLATES)
         .select("*")
         .order("created_at", { ascending: false });
 
@@ -236,7 +236,7 @@ export const useTemplates = () => {
       html?: string;
     }) => {
       const { data, error } = await supabase
-        .from(TABLES.BROADCAST_EMAIL_TEMPLATES)
+        .from(TABLES.EMAIL_TEMPLATES)
         .insert({
           name: template.name,
           subject: template.subject || null,
@@ -271,7 +271,7 @@ export const useTemplates = () => {
       html?: string;
     }) => {
       const { data, error } = await supabase
-        .from(TABLES.BROADCAST_EMAIL_TEMPLATES)
+        .from(TABLES.EMAIL_TEMPLATES)
         .update(updates)
         .eq("id", id)
         .select()
@@ -292,7 +292,7 @@ export const useTemplates = () => {
   const deleteTemplate = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from(TABLES.BROADCAST_EMAIL_TEMPLATES)
+        .from(TABLES.EMAIL_TEMPLATES)
         .delete()
         .eq("id", id);
 

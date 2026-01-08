@@ -18,7 +18,7 @@ export interface Opportunity {
     address: string | null;
     address_suburb: string | null;
     last_sms_at: string | null;
-    agentbuddy_customer_id: string | null;
+    agentbuddy_customer_id?: string | null;
     latitude: number | null;
     longitude: number | null;
     metadata?: { bedrooms?: number } | null;

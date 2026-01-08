@@ -32,7 +32,7 @@ export function useSaleProgressMap(saleIds: string[]) {
 
       // Get SMS counts per sale
       const { data: smsLogs, error: smsError } = await supabase
-        .from(TABLES.BROADCAST_SMS_LOGS)
+        .from(TABLES.SMS_LOGS)
         .select('related_sale_id')
         .in('related_sale_id', saleIds);
 

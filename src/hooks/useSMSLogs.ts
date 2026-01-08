@@ -47,7 +47,7 @@ export function useSMSLogs(contactId?: string) {
     queryKey: ['sms-logs', user?.id, contactId],
     queryFn: async () => {
       let query = supabase
-        .from(TABLES.BROADCAST_SMS_LOGS)
+        .from(TABLES.SMS_LOGS)
         .select(`
           *,
           contacts (
@@ -76,7 +76,7 @@ export function useSMSLogs(contactId?: string) {
       if (!user) throw new Error('Not authenticated');
       
       const { data, error } = await supabase
-        .from(TABLES.BROADCAST_SMS_LOGS)
+        .from(TABLES.SMS_LOGS)
         .insert({ ...log, user_id: user.id })
         .select()
         .single();

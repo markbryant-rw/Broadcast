@@ -61,7 +61,7 @@ export function useProspectingStats() {
 
       // Fetch SMS logs
       const { data: smsLogs, error: smsError } = await supabase
-        .from(TABLES.BROADCAST_SMS_LOGS)
+        .from(TABLES.SMS_LOGS)
         .select('sent_at, related_sale_id')
         .eq('user_id', user.id)
         .gte('sent_at', lastMonthStart.toISOString());
